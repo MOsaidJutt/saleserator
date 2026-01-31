@@ -1,0 +1,187 @@
+/* =========================================================
+   SALESERATOR — Available Courses Page (Theme Matched)
+   Navy #121826 + Cyan #00c1de | Dark glass + premium spacing
+   ========================================================= */
+
+:root{
+  --navy:#121826;
+  --bg0:#050814;
+  --bg1:#020617;
+
+  --cyan:#00c1de;
+  --cyan2:#38bdf8;
+
+  --ink: rgba(232,241,255,.92);
+  --muted: rgba(200,215,255,.72);
+
+  --panelA: rgba(8,12,28,.92);
+  --panelB: rgba(6,10,22,.86);
+
+  --plateA: rgba(9,14,30,.72);
+  --plateB: rgba(5,9,20,.78);
+
+  --border: rgba(0,193,222,.14);
+  --borderSoft: rgba(255,255,255,.06);
+
+  --shadow: 0 28px 80px rgba(0,0,0,.82);
+  --shadowSoft: 0 18px 55px rgba(0,0,0,.65);
+
+  --r: 24px;
+  --r2: 18px;
+  --ease: cubic-bezier(.16,1,.3,1);
+}
+
+/* Page container */
+.available-courses-page{
+  min-height: 100vh;
+  box-sizing: border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding: 2.75rem 0 3.25rem;
+}
+
+/* same width language as dashboard (not edge-to-edge) */
+.available-courses-box{
+  width: min(100% - 3rem, 74rem);
+  border-radius: calc(var(--r) + 10px);
+  overflow:hidden;
+
+  /* "section plate" */
+  background:
+    radial-gradient(900px 260px at 18% 0%, rgba(0,193,222,.10), transparent 62%),
+    radial-gradient(700px 240px at 82% 0%, rgba(255,255,255,.04), transparent 65%),
+    linear-gradient(180deg, var(--plateA), var(--plateB));
+
+  border: 1px solid rgba(255,255,255,.05);
+  box-shadow:
+    0 30px 90px rgba(0,0,0,.55),
+    0 0 50px rgba(255,255,255,.04);
+}
+
+/* Header */
+.available-courses-head{
+  position: relative;
+  padding: 1.1rem 1.4rem;
+
+  /* darker premium header strip */
+  background:
+    linear-gradient(180deg, rgba(0,193,222,.10), rgba(0,193,222,.05));
+
+  color: var(--cyan);
+  font-weight: 900;
+  letter-spacing: .2px;
+  font-size: 1.25rem;
+
+  border-bottom: 1px solid rgba(0,193,222,.14);
+}
+
+/* subtle inner highlight */
+.available-courses-head::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: linear-gradient(180deg, rgba(255,255,255,.05), transparent 55%);
+}
+
+/* Body area */
+.available-courses-body{
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 1.35rem;
+
+  /* dark glass surface */
+  background: linear-gradient(180deg, var(--panelA), var(--panelB));
+
+  border-top: 1px solid rgba(255,255,255,.03);
+
+  min-height: 240px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+}
+
+/* Optional title if you still use one outside the box */
+.available-courses-page h2{
+  font-size: 2rem;
+  font-weight: 950;
+  margin: 0 0 28px;
+  color: var(--cyan);
+  letter-spacing: -0.6px;
+}
+
+/* Grid (aligned with dashboard card rhythm) */
+.available-courses-grid{
+  display:grid;
+  width:100%;
+
+  gap: 1.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+
+  justify-content:start;
+  align-content:start;
+  justify-items:stretch;
+}
+
+/* Each card fills its column */
+.available-courses-grid .card{
+  width:100%;
+  margin:0;
+}
+
+/* Empty state */
+.no-courses-text{
+  text-align:center;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 650;
+  opacity: 0.95;
+
+  margin: 0;
+  padding: 1.5rem 1.25rem;
+
+  border-radius: var(--r2);
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+/* ===========================
+   Responsive
+   =========================== */
+@media (max-width: 900px){
+  .available-courses-page{
+    padding: 2.25rem 0 2.75rem;
+  }
+  .available-courses-box{
+    width: min(100% - 2rem, 74rem);
+  }
+}
+
+@media (max-width: 768px){
+  .available-courses-head{
+    font-size: 1.1rem;
+    text-align:center;
+  }
+  .available-courses-body{
+    padding: 1.1rem;
+  }
+  .available-courses-page h2{
+    font-size: 1.55rem;
+  }
+}
+
+@media (max-width: 600px){
+  .available-courses-page{
+    padding: 1.75rem 0 2.25rem;
+  }
+  .available-courses-box{
+    width: min(100% - 1.2rem, 74rem);
+  }
+  .available-courses-grid{
+    grid-template-columns: 1fr;
+  }
+}

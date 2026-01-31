@@ -1,0 +1,189 @@
+/* Page uses unique "bs-" prefix to avoid clashes with other pages */
+
+/* Theme variables (fallbacks if global vars not present) */
+:root {
+  --bs-text: var(--text, #e5e7eb);
+  --bs-border: var(--border, rgba(255, 255, 255, 0.06));
+  --bs-card: #0f1624;
+  --bs-cyan: var(--brand-cyan, #00c1de);
+  --bs-grad-start: var(--grad-start, #22d3ee);
+  --bs-grad-end: var(--grad-end, #3b82f6);
+}
+
+/* Page container (your other pages usually sit below the fixed navbar already) */
+.bs-page {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+  color: var(--bs-text);
+}
+
+/* Header */
+.bs-header {
+  margin: 6px 0 18px;
+}
+.bs-title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--bs-text);
+}
+.bs-subtitle {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 0.98rem;
+}
+
+/* Grid matching other admin pages (two boxes side-by-side on desktop) */
+.bs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 960px) {
+  .bs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Box style like Upload Course / Course Details */
+.bs-box {
+  background: var(--bs-card);
+  border: 1px solid var(--bs-border);
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.bs-box__head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--bs-border);
+}
+.bs-box__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--bs-text);
+}
+.bs-box__body {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+/* Fields */
+.bs-label {
+  color: #94a3b8;
+  font-size: 0.92rem;
+}
+.bs-input {
+  width: 100%;
+  font-size: 1rem;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.18);
+  color: var(--bs-text);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.bs-input:focus {
+  border-color: #4c51bf;
+  box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.35);
+}
+
+/* Logo row */
+.bs-logo-row {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+@media (max-width: 560px) {
+  .bs-logo-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+.bs-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid var(--bs-border);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.04);
+}
+.bs-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bs-logo__placeholder {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+/* Actions (compact buttons, not full width) */
+.bs-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+/* Buttons (compact, consistent with other admin boxes) */
+.bs-btn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--bs-border);
+  background: transparent;
+  color: var(--bs-text);
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+.bs-btn:hover {
+  transform: translateY(-1px);
+}
+
+.bs-btn--primary {
+  border: none;
+  color: #05222b;
+  background-image: linear-gradient(
+    90deg,
+    var(--bs-grad-start) 0%,
+    var(--bs-grad-end) 100%
+  );
+  box-shadow:
+    0 6px 18px rgba(34, 211, 238, 0.25),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Footer */
+.bs-footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+/* Notes */
+.bs-note {
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+}
+.bs-note--success {
+  color: #a7f3d0;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+.bs-note--error {
+  color: #fca5a5;
+  background: rgba(252, 165, 165, 0.08);
+  border: 1px solid rgba(252, 165, 165, 0.35);
+}

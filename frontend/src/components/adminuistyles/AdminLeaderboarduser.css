@@ -1,0 +1,170 @@
+/* Root wrapper for the user detail page */
+.leaderboard-user-page {
+  width: 100%; /* Allow container to take full width */
+  max-width: 1100px; /* Limit max width to 1100px */
+  margin: 0 auto; /* Center the content */
+  padding: 1.5rem;
+  min-height: 100vh;
+  display: grid;
+  gap: 1rem; /* Ensure consistent gap between sections */
+}
+
+/* Main content */
+.leaderboard-user-content {
+  width: 100%; /* Ensure content spans full width */
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 30px;
+  background-color: #101828;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Header */
+.leaderboard-user-page .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.leaderboard-user-page .header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #00c1de;
+}
+
+.leaderboard-user-page .subtitle {
+  font-size: 1rem;
+  color: #cbd5e1;
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+/* Back link */
+.leaderboard-user-page .link {
+  color: #93c5fd;
+  text-decoration: underline;
+  font-size: 0.875rem;
+}
+
+.leaderboard-user-page .link:hover {
+  text-decoration: none;
+  color: #bfdbfe;
+}
+
+/* Filter bar */
+.leaderboard-user-page .filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.leaderboard-user-page .filter-group {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.875rem;
+}
+
+.leaderboard-user-page .filter-group label {
+  margin-bottom: 0.25rem;
+  color: #00c1de;
+}
+
+.leaderboard-user-page .filter-group input {
+  padding: 0.3rem 0.5rem;
+  border: 2px solid #1e293b;
+  border-radius: 4px;
+  background: #101828;
+  color: #f1f5f9;
+  font-size: 0.875rem;
+}
+
+.leaderboard-user-page .filter-group input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+  border-color: #00c1de;
+}
+
+/* Button */
+.leaderboard-user-page .btn-primary {
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.875rem;
+  color: #ffffff;
+  cursor: pointer;
+  background: #0ea5e9;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.leaderboard-user-page .btn-primary:hover {
+  background: #00c1de;
+}
+
+.leaderboard-user-page .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Cards and tables */
+.leaderboard-user-page .card {
+  background: #101828;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.3);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.leaderboard-user-page .card-header {
+  padding: 0.5rem 0.75rem;
+  background: #0f1624;
+  border-bottom: 1px solid #1e293b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #00c1de;
+}
+
+.leaderboard-user-page .user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+}
+
+.leaderboard-user-page .user-table thead {
+  background: #0f1624;
+  font-weight: 600;
+}
+
+.leaderboard-user-page .user-table th,
+.leaderboard-user-page .user-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #1e293b;
+  text-align: left;
+}
+
+.leaderboard-user-page .user-table tbody tr:hover {
+  background: #1e293b;
+}
+
+/* Right-aligned numeric cells */
+.leaderboard-user-page .user-table .right {
+  text-align: right;
+}
+
+/* Empty state rows */
+.leaderboard-user-page .empty {
+  text-align: center;
+  color: #9fb0c7;
+  padding: 1rem 0;
+}
+
+/* Make sure body takes full height and no margin */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh; /* Ensure full viewport height */
+}

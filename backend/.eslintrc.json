@@ -1,0 +1,34 @@
+{
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020, // Ensure ECMAScript 2020 syntax support (latest JS features)
+    "sourceType": "module" // Ensure ESLint understands it's an ES module with 'import/export'
+  },
+  "settings": {
+    "react": {
+      "version": "detect" // This will automatically detect the React version in your project
+    }
+  },
+  "plugins": ["react"],
+  "rules": {
+    "react/prop-types": "off", // Disable PropTypes check if you're using TypeScript (optional)
+    "no-console": "warn", // Avoid console logs in production
+    "prettier/prettier": [
+      "error",
+      {
+        "singleQuote": true,
+        "trailingComma": "all",
+        "semi": true
+      }
+    ]
+  }
+}

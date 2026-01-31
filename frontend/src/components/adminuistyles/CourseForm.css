@@ -1,0 +1,581 @@
+/* =====================================================
+   SALESERATOR — Premium Glass + Motion Pack (Courses Page)
+   Uses SAME class names; adds consistent effects/animations
+   ===================================================== */
+
+:root{
+  --sr-bg0:#050814;
+  --sr-bg1:#020617;
+
+  --sr-navy:#121826;
+  --sr-panelA: rgba(10,14,34,.92);
+  --sr-panelB: rgba(6,10,28,.92);
+
+  --sr-ink: rgba(232,241,255,.92);
+  --sr-muted: rgba(190,205,255,.72);
+
+  --sr-cyan:#00c1de;
+  --sr-cyan2:#38bdf8;
+
+  --sr-border: rgba(0,193,222,.16);
+  --sr-borderSoft: rgba(255,255,255,.07);
+
+  --sr-shadow: 0 30px 90px rgba(0,0,0,.65);
+  --sr-glow: 0 0 0 1px rgba(0,193,222,.18), 0 18px 48px rgba(0,193,222,.10);
+
+  --sr-radius: 20px;
+}
+
+/* -----------------------------------------
+   OPTIONAL: Page backdrop effects (safe)
+   Add class="courses-page" on the page wrapper if you can.
+   If not, this won't break anything.
+------------------------------------------ */
+.courses-page{
+  position: relative;
+  isolation: isolate;
+}
+
+.courses-page::before{
+  content:"";
+  position:absolute;
+  inset:-120px -80px;
+  z-index:-2;
+  background:
+    radial-gradient(900px 500px at 20% 10%, rgba(0,193,222,.10), transparent 65%),
+    radial-gradient(800px 520px at 85% 25%, rgba(56,189,248,.08), transparent 60%),
+    radial-gradient(900px 680px at 50% 90%, rgba(99,102,241,.10), transparent 70%);
+  filter: blur(12px);
+  animation: srFloatBG 14s ease-in-out infinite;
+}
+
+.courses-page::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), transparent 30%),
+    radial-gradient(1200px 800px at 50% 20%, rgba(255,255,255,.04), transparent 60%);
+  pointer-events:none;
+}
+
+@keyframes srFloatBG{
+  0%,100%{ transform: translate3d(0,0,0) scale(1); opacity: .95; }
+  50%{ transform: translate3d(0,-10px,0) scale(1.02); opacity: 1; }
+}
+
+/* -----------------------------------------
+   Shared: premium glass card shell
+------------------------------------------ */
+.course-form-collapsible,
+.existing-courses-wrap{
+  position: relative;
+  border-radius: var(--sr-radius);
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--sr-panelA), var(--sr-panelB));
+  border: 1px solid var(--sr-borderSoft);
+  box-shadow: var(--sr-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transform: translateZ(0);
+}
+
+/* Animated border shimmer */
+.course-form-collapsible::before,
+.existing-courses-wrap::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(120deg,
+      transparent 0%,
+      rgba(0,193,222,.08) 20%,
+      rgba(255,255,255,.06) 35%,
+      rgba(0,193,222,.08) 50%,
+      transparent 70%);
+  transform: translateX(-60%);
+  opacity: .75;
+  animation: srShimmer 6.5s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes srShimmer{
+  0%{ transform: translateX(-60%); opacity:.55; }
+  50%{ transform: translateX(25%); opacity:.85; }
+  100%{ transform: translateX(110%); opacity:.55; }
+}
+
+/* Soft inner highlight */
+.course-form-collapsible::after,
+.existing-courses-wrap::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+/* Center alignment remains */
+.course-form-collapsible{
+  max-width: 70rem;
+  margin: 2rem auto;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.existing-courses-wrap{
+  max-width: 70rem;
+  margin: 0 auto 2rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* -----------------------------------------
+   Trigger header: glow + hover lift + animated underline
+------------------------------------------ */
+.collapsible-trigger,
+.existing-courses-title{
+  position: relative;
+  width: 100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+
+  padding: 1.1rem 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(0,193,222,.18), rgba(0,193,222,.06));
+  color: var(--sr-cyan);
+  font-weight: 800;
+  letter-spacing: .3px;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.5rem;
+
+  box-shadow:
+    inset 0 -1px 0 rgba(255,255,255,.07),
+    0 12px 26px rgba(0,0,0,.35);
+}
+
+.collapsible-trigger:hover{
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 -1px 0 rgba(255,255,255,.08),
+    0 18px 36px rgba(0,0,0,.45),
+    0 0 0 1px rgba(0,193,222,.16);
+}
+
+/* animated cyan underline */
+.collapsible-trigger::after,
+.existing-courses-title::after{
+  content:"";
+  position:absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,193,222,.55), transparent);
+  opacity: .9;
+  filter: blur(.1px);
+}
+
+/* Chevron rotation */
+.collapsible-trigger .chevron{
+  transition: transform .35s ease;
+  will-change: transform;
+}
+.course-form-collapsible.is-open .collapsible-trigger .chevron{
+  transform: rotate(180deg);
+}
+
+/* -----------------------------------------
+   Collapsible content: premium slide open
+------------------------------------------ */
+.collapsible-content{
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-10px);
+  transition:
+    max-height .55s ease,
+    opacity .25s ease,
+    transform .55s ease;
+  will-change: max-height, opacity, transform;
+  background: rgba(18,24,38,.92);
+  padding: 0;
+}
+
+.course-form-collapsible.is-open .collapsible-content{
+  max-height: 2400px;
+  opacity: 1;
+  transform: translateY(0);
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+/* Form inner container */
+.course-form-container{
+  width: 100%;
+  padding: 2.1rem 1.75rem;
+  background:
+    radial-gradient(1000px 400px at 20% 0%, rgba(0,193,222,.07), transparent 60%),
+    linear-gradient(180deg, rgba(18,24,38,.96), rgba(10,14,30,.96));
+}
+
+/* Title */
+.course-form-title{
+  font-size: 1.9rem;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  margin: 0 0 1.2rem 0;
+  text-shadow: 0 10px 24px rgba(0,0,0,.45);
+}
+
+/* Form grid */
+.course-form{ display:grid; gap: 1.5rem; }
+
+.grid-layout{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-bottom: 30px;
+}
+
+/* Labels */
+form .label{
+  display:block;
+  margin-bottom: .6rem;
+  font-weight: 800;
+  color: var(--sr-cyan);
+  font-size: 1rem;
+  text-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+
+/* -----------------------------------------
+   Inputs: glass, focus glow, subtle hover
+------------------------------------------ */
+.input-field,
+.textarea-field{
+  width: 100%;
+  font-size: 1rem;
+  padding: .85rem 1rem;
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(0,193,222,.14);
+  color: var(--sr-ink);
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .12s ease,
+    background .2s ease;
+}
+
+.input-field:hover,
+.textarea-field:hover{
+  background: rgba(255,255,255,.045);
+  border-color: rgba(0,193,222,.22);
+}
+
+.input-field:focus,
+.textarea-field:focus{
+  border-color: #00c1de;
+  box-shadow:
+    0 0 0 3px rgba(0,193,222,.22),
+    0 10px 24px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* -----------------------------------------
+   Submit button: gradient + shine + press
+------------------------------------------ */
+.submit-btn{
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 0;
+  border-radius: 18px;
+  cursor: pointer;
+  color: white;
+
+  background:
+    linear-gradient(180deg, rgba(0,193,222,.95), rgba(0,140,165,.95));
+  box-shadow:
+    0 18px 40px rgba(0,193,222,.18),
+    0 10px 26px rgba(0,0,0,.40),
+    inset 0 1px 0 rgba(255,255,255,.12);
+
+  position: relative;
+  overflow: hidden;
+
+  transition:
+    transform .08s ease,
+    box-shadow .18s ease,
+    filter .18s ease;
+}
+
+.submit-btn::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background:
+    linear-gradient(120deg,
+      transparent 30%,
+      rgba(255,255,255,.22) 45%,
+      transparent 60%);
+  transform: translateX(-70%) rotate(8deg);
+  animation: srBtnShine 3.8s ease-in-out infinite;
+}
+
+@keyframes srBtnShine{
+  0%{ transform: translateX(-70%) rotate(8deg); opacity:.55; }
+  45%{ opacity:.85; }
+  100%{ transform: translateX(70%) rotate(8deg); opacity:.55; }
+}
+
+.submit-btn:hover{
+  filter: brightness(1.03);
+  box-shadow:
+    0 22px 52px rgba(0,193,222,.22),
+    0 12px 30px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.14);
+  transform: translateY(-1px);
+}
+
+.submit-btn:active{
+  transform: translateY(1px);
+}
+
+.submit-btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+.submit-btn:disabled::before{
+  animation: none;
+}
+
+/* File name */
+.file-name{
+  font-size: .95rem;
+  margin-top: .35rem;
+  opacity: .9;
+  color: var(--sr-muted);
+}
+
+/* Upload progress */
+.file-upload-progress{ margin-top:.75rem; margin-bottom:1rem; }
+
+.file-upload-progress .file-item{
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px;
+  padding: .75rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.progress-bar-container{
+  height: .6rem;
+  background-color: rgba(255,255,255,.08);
+  border-radius: .35rem;
+  overflow: hidden;
+}
+
+.progress-bar{
+  height: 100%;
+  transition: width .35s ease;
+  box-shadow: 0 10px 24px rgba(0,0,0,.28);
+}
+
+/* Your existing overrides preserved */
+.progress-bar.progress-red{ background-color:#e53e3e !important; }
+.progress-bar.progress-yellow{ background-color:#facc15 !important; }
+.progress-bar.progress-green{ background-color:#22c55e !important; }
+
+/* -----------------------------------------
+   Existing Courses
+------------------------------------------ */
+.existing-courses-title{
+  margin: 0;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+/* Optional body wrapper */
+.existing-courses-body{ padding: 1rem 1.25rem 1.25rem; }
+
+.course-list{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+@media (min-width: 640px){
+  .course-list{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px){
+  .course-list{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Cards: glow hover + subtle tilt */
+.course-card{
+  position: relative;
+  display:flex;
+  flex-direction:column;
+  gap: .75rem;
+
+  background:
+    radial-gradient(800px 280px at 20% 0%, rgba(0,193,222,.06), transparent 60%),
+    linear-gradient(180deg, rgba(18,24,38,.96), rgba(10,14,30,.96));
+
+  border: 1px solid rgba(0,193,222,.12);
+  border-radius: 18px;
+  padding: 1rem;
+
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease,
+    border-color .22s ease,
+    filter .22s ease;
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* Hover glow ring */
+.course-card::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius: 18px;
+  pointer-events:none;
+  opacity: 0;
+  transition: opacity .22s ease;
+  box-shadow: var(--sr-glow);
+}
+
+.course-card:hover{
+  transform: translateY(-3px);
+  border-color: rgba(0,193,222,.35);
+  filter: brightness(1.03);
+  box-shadow:
+    0 24px 54px rgba(0,0,0,.55),
+    0 18px 48px rgba(0,193,222,.10),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.course-card:hover::after{
+  opacity: 1;
+}
+
+.course-card-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap: .5rem;
+}
+
+.course-card-title{
+  font-weight: 800;
+  color: var(--sr-ink);
+  line-height: 1.25;
+}
+
+.course-card-sub{
+  font-size: .9rem;
+  color: var(--sr-muted);
+  margin-top: .15rem;
+}
+
+/* Actions */
+.course-card-actions{
+  display:flex;
+  gap:.5rem;
+  margin-top:.25rem;
+}
+
+/* Buttons: glass + hover glow */
+.course-item-btn,
+.delete-btn{
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--sr-ink);
+  padding: .55rem .8rem;
+  border-radius: 12px;
+  font-size: .95rem;
+  cursor:pointer;
+  transition:
+    background .18s ease,
+    color .18s ease,
+    border-color .18s ease,
+    transform .06s ease,
+    box-shadow .18s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.course-item-btn:hover{
+  color: var(--sr-cyan2);
+  border-color: rgba(56,189,248,.55);
+  background: rgba(56,189,248,.10);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(56,189,248,.16);
+}
+
+.delete-btn:hover{
+  color: #ffb4b4;
+  border-color: rgba(229,62,62,.65);
+  background: rgba(229,62,62,.12);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(229,62,62,.16);
+}
+
+.course-item-btn:active,
+.delete-btn:active{
+  transform: translateY(1px);
+}
+
+/* Muted */
+.muted{
+  color: var(--sr-muted);
+  opacity: .9;
+}
+
+/* Hidden pill */
+.hidden-pill{
+  display:inline-block;
+  padding: .18rem .6rem;
+  font-size: .75rem;
+  font-weight: 700;
+  color: #ffb4b4;
+  background-color: rgba(229,62,62,.16);
+  border: 1px solid rgba(229,62,62,.45);
+  border-radius: 9999px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  user-select:none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* -----------------------------------------
+   Reduced motion support
+------------------------------------------ */
+@media (prefers-reduced-motion: reduce){
+  .courses-page::before,
+  .course-form-collapsible::before,
+  .existing-courses-wrap::before,
+  .submit-btn::before{
+    animation: none !important;
+  }
+  .collapsible-content,
+  .collapsible-trigger .chevron,
+  .course-card,
+  .course-item-btn,
+  .delete-btn{
+    transition: none !important;
+  }
+}

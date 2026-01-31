@@ -1,0 +1,317 @@
+/* ===========================
+   CourseDetail Page Styles
+   =========================== */
+
+.cd-wrap {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+/* Header panel */
+.cd-header {
+  background: #0f1624;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.cd-header__inner {
+  background: #121826;
+  padding: 1.25rem 1.25rem 1rem;
+}
+
+/* --- Title row: title left, back button right --- */
+.cd-header__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Title */
+.cd-title {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #ffffff;
+
+  /* prevent the button from wrapping below by truncating long titles */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+}
+
+/* ---------- COURSE META (white stacked lines) ---------- */
+.cd-meta {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.cd-meta__row {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.cd-meta__item {
+  display: block;
+  font-weight: 500;
+}
+.cd-meta__item strong {
+  color: #00c1de;
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+.cd-meta__item--full {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* Progress row under title */
+.cd-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.cd-progress__track {
+  flex: 1;
+  height: 20px;
+  background: #1b2335;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.cd-progress__fill {
+  height: 100%;
+  width: 0%;
+  background: #00c1de;
+  transition: width 0.35s ease;
+}
+.cd-progress__text {
+  color: #cbd5e0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Video list section shell */
+.cd-section {
+  background: #0f1624;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.cd-section__head {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 193, 222, 0.12),
+    rgba(0, 193, 222, 0.04)
+  );
+  color: #00c1de;
+  font-weight: 700;
+  font-size: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.cd-section__body {
+  background: #121826;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+/* ---------- VIDEO LIST ---------- */
+.cd-video-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.cd-video {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 12px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+.cd-video:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  border-color: rgba(229, 231, 235, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+}
+.cd-video__index {
+  text-align: right;
+  opacity: 0.7;
+  color: #e5e7eb;
+}
+.cd-video__main {
+  min-width: 0;
+}
+.cd-video__title {
+  font-weight: 600;
+  color: #e5e7eb;
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cd-video__meta {
+  font-size: 12px;
+  color: #cbd5e0;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+.cd-video__name {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Badge: never shrink, never get clipped */
+.cd-video__title .cd-badge {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Watch button */
+.cd-watch {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 193, 222, 0.3);
+  background: rgba(0, 193, 222, 0.08);
+  color: #00c1de;
+  text-decoration: none;
+  font-weight: 600;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.06s ease,
+    box-shadow 0.18s ease;
+  justify-self: end;
+}
+.cd-watch:hover {
+  background: rgba(0, 193, 222, 0.12);
+  border-color: rgba(0, 193, 222, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 193, 222, 0.15);
+}
+.cd-watch:active {
+  transform: translateY(0);
+}
+.cd-empty {
+  color: #718096;
+  opacity: 0.9;
+  font-size: 0.95rem;
+  padding: 0.25rem 0;
+}
+
+/* Completed badge */
+.cd-badge {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.5rem;
+}
+.cd-badge--done {
+  top: 10px;
+  right: 10px;
+  background: #00c1de;
+  color: #0a0f18;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(0, 193, 222, 0.35);
+  letter-spacing: 0.2px;
+}
+.cd-watch--again {
+  font-weight: 600;
+}
+
+/* Back button (pill) — matches other pills; no bottom margin now */
+.cd-back {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: rgba(0, 193, 222, 0.08);
+  color: #00c1de;
+  border: 1px solid rgba(0, 193, 222, 0.35);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.06s ease,
+    box-shadow 0.18s ease;
+  box-shadow: inset 0 0 0 2px rgba(0, 193, 222, 0.08);
+  margin: 0; /* important: remove previous margin-bottom */
+}
+.cd-back:hover {
+  background: rgba(0, 193, 222, 0.12);
+  border-color: rgba(0, 193, 222, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 193, 222, 0.15);
+}
+.cd-back:active {
+  transform: translateY(0);
+}
+
+/* ---------- RESPONSIVE FIX ---------- */
+@media (max-width: 780px) {
+  .cd-header__top {
+    flex-wrap: wrap;
+  }
+  .cd-title {
+    width: 100%;
+    white-space: normal;
+  } /* allow wrapping when narrow */
+  .cd-back {
+    margin-left: auto;
+  } /* keep button right-aligned on next line */
+
+  .cd-video {
+    grid-template-columns: 22px 1fr;
+    align-items: start;
+  }
+  .cd-video__index {
+    width: 22px;
+  }
+  .cd-watch {
+    grid-column: 2 / 3;
+    justify-self: start;
+    margin-top: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cd-wrap {
+    padding: 1rem;
+  }
+  .cd-video {
+    gap: 0.5rem;
+    padding: 10px 12px;
+  }
+  .cd-title {
+    font-size: 1.5rem;
+  }
+}

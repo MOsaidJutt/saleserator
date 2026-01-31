@@ -1,0 +1,246 @@
+/* Container for each section */
+.existing-container {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0f1624;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+
+  /* Center alignment */
+  max-width: 70rem;
+  margin: 2rem auto;
+
+  /* no side padding so header touches rounded edges */
+  padding-left: 0;
+  padding-right: 0;
+}
+/* Table Styling */
+.table-container {
+  overflow-x: auto;
+}
+
+.company-table,
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.company-table th,
+.company-table td,
+.admin-table th,
+.admin-table thead {
+  padding: 14px 22px; /* Increased padding */
+  text-align: left;
+  border-bottom: 1px solid #1e293b;
+  font-size: 1rem; /* Adjust font size for better clarity */
+}
+
+.company-table th,
+.admin-table th {
+  background-color: #0f1624;
+  color: #00c1de;
+  font-weight: 700;
+  letter-spacing: 0.5px; /* Adjust letter spacing for headings */
+}
+
+.company-table td,
+.admin-table td {
+  background-color: #101828;
+  color: #f1f5f9;
+}
+
+.company-table tr:hover td,
+.admin-table tr:hover td{
+  background-color: #1e293b;
+  cursor: pointer; /* Ensure it feels interactive */
+}
+
+/* Empty State */
+.empty {
+  padding: 20px;
+  text-align: center;
+  color: #9fb0c7;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* Wrapper that holds the trigger + the form (centered, no side padding) */
+.create-collapsible {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0f1624;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+
+  /* Center alignment */
+  max-width: 70rem;
+  margin: 2rem auto;
+
+  /* no side padding so header touches rounded edges */
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Clickable header/trigger */
+.collapsible-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 193, 222, 0.12),
+    rgba(0, 193, 222, 0.04)
+  );
+  color: #00c1de;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.5rem;
+
+  /* make header corners match outer wrapper */
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+}
+
+/* Chevron animation */
+.collapsible-trigger .chevron {
+  transition: transform 0.3s ease;
+  margin-left: 8px;
+}
+
+.collapsible-trigger .chevron-rotate {
+  transform: rotate(180deg);
+}
+
+/* The sliding content (your form area) */
+.collapsible-content {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-8px);
+  transition:
+    max-height 0.45s ease,
+    opacity 0.25s ease,
+    transform 0.45s ease;
+  will-change: max-height, opacity, transform;
+  background: #121826;
+
+  /* no padding here; inner container will handle it */
+  padding: 0;
+}
+
+.create-collapsible.is-open .collapsible-content {
+  max-height: 2400px;
+  opacity: 1;
+  transform: translateY(0);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.create-collapsible.is-open .collapsible-trigger .chevron {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsible-content {
+    transition: none;
+  }
+  .collapsible-trigger .chevron {
+    transition: none;
+  }
+}
+
+.create-container {
+  width: 100%;
+  padding: 2rem 1.5rem; /* inner horizontal gap */
+  background-color: #121826;
+  border-radius: 20px; /* keep flat so outer wrapper's radius is the only one */
+  box-shadow: none; /* avoid double shadow inside */
+}
+
+/* Title (used above sections if needed) */
+.super-admin-title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  text-align: center;
+  color: #ffff;
+  margin: 0 0 1rem 0;
+}
+
+/* Responsive, roomy grid for inputs */
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Labels */
+.label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+  color: #00c1de;
+  font-size: 1rem;
+}
+
+/* Inputs, selects & textareas */
+.input-field,
+.textarea-field {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(226, 232, 240, 0.18);
+  color: #e5e7eb;
+  outline: none;
+}
+
+.input-field:focus,
+.textarea-field:focus {
+  border-color: #4c51bf;
+  box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.35);
+}
+
+/* Submit / primary buttons */
+.submit-btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  background-color: #4c51bf;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  border: none;
+  transition:
+    background-color 0.25s ease,
+    transform 0.06s ease,
+    box-shadow 0.18s ease;
+  box-shadow: 0 4px 14px rgba(76, 81, 191, 0.28);
+}
+
+.submit-btn:hover {
+  background-color: #434190;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(76, 81, 191, 0.32);
+}
+
+/* Messages */
+.message {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background-color: rgba(0, 193, 222, 0.15);
+  color: #e5e7eb;
+}

@@ -1,0 +1,758 @@
+/* =====================================================
+   SALESERATOR — EDIT COURSE (Premium Glass Dark Navy)
+   Same classes, consistent animations/effects site-wide
+   ===================================================== */
+
+:root{
+  --sr-bg0:#050814;
+  --sr-bg1:#020617;
+
+  --sr-panelA: rgba(10,14,34,.92);
+  --sr-panelB: rgba(6,10,28,.92);
+  --sr-panelC: rgba(18,24,38,.92);
+
+  --sr-ink: rgba(232,241,255,.92);
+  --sr-muted: rgba(190,205,255,.72);
+
+  --sr-cyan:#00c1de;
+  --sr-cyan2:#38bdf8;
+
+  --sr-border: rgba(0,193,222,.16);
+  --sr-borderSoft: rgba(255,255,255,.07);
+
+  --sr-shadow: 0 30px 90px rgba(0,0,0,.65);
+  --sr-glow: 0 0 0 1px rgba(0,193,222,.18), 0 18px 48px rgba(0,193,222,.10);
+
+  --sr-radius: 20px;
+}
+
+/* -----------------------------------------
+   OPTIONAL page wrapper background effects:
+   Add <div className="edit-course-page"> around page if you can.
+   If not added, nothing breaks.
+------------------------------------------ */
+.edit-course-page{
+  position: relative;
+  isolation: isolate;
+}
+.edit-course-page::before{
+  content:"";
+  position:absolute;
+  inset:-120px -80px;
+  z-index:-2;
+  background:
+    radial-gradient(900px 520px at 18% 10%, rgba(0,193,222,.10), transparent 65%),
+    radial-gradient(820px 540px at 85% 22%, rgba(56,189,248,.08), transparent 60%),
+    radial-gradient(900px 680px at 52% 92%, rgba(99,102,241,.10), transparent 70%);
+  filter: blur(12px);
+  animation: srFloatBG 14s ease-in-out infinite;
+}
+.edit-course-page::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), transparent 30%),
+    radial-gradient(1200px 800px at 50% 20%, rgba(255,255,255,.04), transparent 60%);
+  pointer-events:none;
+}
+
+@keyframes srFloatBG{
+  0%,100%{ transform: translate3d(0,0,0) scale(1); opacity: .95; }
+  50%{ transform: translate3d(0,-10px,0) scale(1.02); opacity: 1; }
+}
+
+/* -----------------------------------------
+   Page container (glass shell + shimmer)
+------------------------------------------ */
+.edit-course-container{
+  max-width: 70rem;
+  margin: 2rem auto;
+  padding: 0;
+  border-radius: var(--sr-radius);
+  overflow: hidden;
+
+  background: linear-gradient(180deg, var(--sr-panelA), var(--sr-panelB));
+  border: 1px solid var(--sr-borderSoft);
+  box-shadow: var(--sr-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transform: translateZ(0);
+  position: relative;
+}
+
+/* shimmer sweep */
+.edit-course-container::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(120deg,
+      transparent 0%,
+      rgba(0,193,222,.08) 20%,
+      rgba(255,255,255,.06) 35%,
+      rgba(0,193,222,.08) 50%,
+      transparent 70%);
+  transform: translateX(-60%);
+  opacity: .75;
+  animation: srShimmer 6.5s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+@keyframes srShimmer{
+  0%{ transform: translateX(-60%); opacity:.55; }
+  50%{ transform: translateX(25%); opacity:.85; }
+  100%{ transform: translateX(110%); opacity:.55; }
+}
+
+/* soft inner highlight */
+.edit-course-container::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+/* -----------------------------------------
+   Header (glow, underline, hover polish)
+------------------------------------------ */
+.edit-course-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.5rem;
+
+  background:
+    linear-gradient(180deg, rgba(0,193,222,.18), rgba(0,193,222,.06));
+  border-bottom: 1px solid rgba(255,255,255,.08);
+
+  position: relative;
+  box-shadow:
+    inset 0 -1px 0 rgba(255,255,255,.07),
+    0 12px 26px rgba(0,0,0,.35);
+}
+
+.edit-course-header::after{
+  content:"";
+  position:absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,193,222,.55), transparent);
+  opacity: .95;
+}
+
+.edit-course-header h1{
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 900;
+  letter-spacing: .25px;
+  color: var(--sr-cyan);
+  text-shadow: 0 10px 24px rgba(0,0,0,.40);
+}
+
+/* Back link: glass pill + hover glow */
+.edit-course-header .back-link{
+  color: rgba(232,241,255,.85);
+  text-decoration: none;
+  font-weight: 700;
+
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: .45rem .85rem;
+  border-radius: 999px;
+
+  transition:
+    transform .12s ease,
+    box-shadow .18s ease,
+    color .18s ease,
+    border-color .18s ease,
+    background .18s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.edit-course-header .back-link:hover{
+  color: var(--sr-cyan);
+  border-color: rgba(0,193,222,.45);
+  background: rgba(0,193,222,.10);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(0,193,222,.16);
+  transform: translateY(-1px);
+}
+
+.edit-course-header .back-link:active{
+  transform: translateY(0);
+}
+
+/* -----------------------------------------
+   Body wrapper
+------------------------------------------ */
+.edit-body{
+  padding: 1.6rem;
+  display: grid;
+  gap: 1.5rem;
+
+  background:
+    radial-gradient(1000px 420px at 20% 0%, rgba(0,193,222,.07), transparent 60%),
+    linear-gradient(180deg, rgba(18,24,38,.92), rgba(10,14,30,.92));
+}
+
+/* -----------------------------------------
+   Card sections (hover lift + glow ring)
+------------------------------------------ */
+.edit-card{
+  background:
+    radial-gradient(800px 280px at 20% 0%, rgba(0,193,222,.06), transparent 60%),
+    linear-gradient(180deg, rgba(18,24,38,.96), rgba(10,14,30,.96));
+
+  border: 1px solid rgba(0,193,222,.12);
+  border-radius: 18px;
+  padding: 1.25rem;
+
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.05);
+
+  position: relative;
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease,
+    border-color .22s ease,
+    filter .22s ease;
+}
+
+/* glow ring */
+.edit-card::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius: 18px;
+  pointer-events:none;
+  opacity: 0;
+  transition: opacity .22s ease;
+  box-shadow: var(--sr-glow);
+}
+
+.edit-card:hover{
+  transform: translateY(-3px);
+  border-color: rgba(0,193,222,.32);
+  filter: brightness(1.02);
+  box-shadow:
+    0 24px 54px rgba(0,0,0,.55),
+    0 18px 48px rgba(0,193,222,.10),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+.edit-card:hover::after{ opacity: 1; }
+
+/* Section titles */
+.edit-card .section-title{
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: rgba(232,241,255,.90);
+  margin: 0 0 .9rem 0;
+  text-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+
+/* Divider line */
+.divider{
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+  margin: .75rem 0 1rem;
+  border: 0;
+}
+
+/* -----------------------------------------
+   Form styling
+------------------------------------------ */
+.edit-form{
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 900px){
+  .edit-form{
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1.25rem;
+    row-gap: 1.1rem;
+  }
+  .edit-form .field--full{
+    grid-column: 1 / -1;
+  }
+}
+
+/* Field group */
+.form-field{
+  display: grid;
+  gap: .45rem;
+}
+
+/* Labels */
+.form-field label{
+  font-weight: 800;
+  color: var(--sr-cyan);
+  font-size: .98rem;
+  letter-spacing: .2px;
+  text-shadow: 0 10px 24px rgba(0,0,0,.22);
+}
+
+/* Inputs / textareas (glass + hover + focus glow) */
+.form-input,
+.form-textarea{
+  width: 100%;
+  font-size: 1rem;
+  color: var(--sr-ink);
+
+  background: rgba(255,255,255,.035);
+  padding: .88rem 1rem;
+
+  border: 1px solid rgba(0,193,222,.14);
+  border-radius: 18px;
+  outline: none;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease,
+    transform .12s ease;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder{
+  color: rgba(180,195,230,.70);
+}
+
+.form-input:hover,
+.form-textarea:hover{
+  background: rgba(255,255,255,.045);
+  border-color: rgba(0,193,222,.22);
+}
+
+.form-input:focus,
+.form-textarea:focus{
+  border-color: rgba(0,193,222,.55);
+  background: rgba(255,255,255,.05);
+  box-shadow:
+    0 0 0 3px rgba(0,193,222,.22),
+    0 10px 24px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.form-textarea{
+  min-height: 7.5rem;
+  resize: vertical;
+}
+
+/* Compact field */
+@media (min-width: 900px){
+  .form-field--compact .form-input{
+    max-width: 20rem;
+  }
+}
+
+/* -----------------------------------------
+   Actions (Save button)
+------------------------------------------ */
+.actions{
+  display:flex;
+  gap: .75rem;
+  justify-content: flex-end;
+  margin-top: .25rem;
+}
+
+/* Save: brand teal gradient + shine */
+.save-btn{
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+
+  border: 0;
+  border-radius: 18px;
+  cursor: pointer;
+
+  background:
+    linear-gradient(180deg, rgba(0,193,222,.95), rgba(0,140,165,.95));
+  box-shadow:
+    0 18px 40px rgba(0,193,222,.18),
+    0 10px 26px rgba(0,0,0,.40),
+    inset 0 1px 0 rgba(255,255,255,.12);
+
+  position: relative;
+  overflow: hidden;
+
+  transition:
+    transform .08s ease,
+    box-shadow .18s ease,
+    filter .18s ease;
+}
+
+.save-btn::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background:
+    linear-gradient(120deg,
+      transparent 30%,
+      rgba(255,255,255,.22) 45%,
+      transparent 60%);
+  transform: translateX(-70%) rotate(8deg);
+  animation: srBtnShine 3.8s ease-in-out infinite;
+}
+
+@keyframes srBtnShine{
+  0%{ transform: translateX(-70%) rotate(8deg); opacity:.55; }
+  45%{ opacity:.85; }
+  100%{ transform: translateX(70%) rotate(8deg); opacity:.55; }
+}
+
+.save-btn:hover{
+  filter: brightness(1.03);
+  box-shadow:
+    0 22px 52px rgba(0,193,222,.22),
+    0 12px 30px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.14);
+  transform: translateY(-1px);
+}
+.save-btn:active{ transform: translateY(1px); }
+.save-btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+.save-btn:disabled::before{ animation: none; }
+
+/* Ghost button */
+.btn-ghost{
+  padding: .9rem 1rem;
+  color: var(--sr-ink);
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 18px;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+
+  transition:
+    background .18s ease,
+    color .18s ease,
+    border-color .18s ease,
+    transform .08s ease,
+    box-shadow .18s ease;
+}
+
+.btn-ghost:hover{
+  color: var(--sr-cyan);
+  border-color: rgba(0,193,222,.45);
+  background: rgba(0,193,222,.10);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(0,193,222,.16);
+  transform: translateY(-1px);
+}
+.btn-ghost:active{ transform: translateY(0); }
+
+/* -----------------------------------------
+   Upload area / progress (glass + consistent)
+------------------------------------------ */
+.file-upload-progress{
+  display:flex;
+  flex-direction:column;
+  gap: .6rem;
+}
+
+.file-upload-progress .file-item{
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 18px;
+  padding: .75rem;
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.file-upload-progress .file-name{
+  font-size: .95rem;
+  color: var(--sr-ink);
+  margin-bottom: .25rem;
+}
+
+.progress-bar-container{
+  height: .6rem;
+  background-color: rgba(255,255,255,.10);
+  border-radius: .35rem;
+  overflow:hidden;
+}
+
+.progress-bar{
+  height: 100%;
+  transition: width .35s ease;
+  box-shadow: 0 10px 24px rgba(0,0,0,.28);
+}
+
+/* Dynamic colors preserved */
+.progress-bar.progress-red{ background-color:#e53e3e; }
+.progress-bar.progress-yellow{ background-color:#facc15; }
+.progress-bar.progress-green{ background-color:#22c55e; }
+
+/* -----------------------------------------
+   Existing videos list (premium cards)
+------------------------------------------ */
+.existing-videos-list{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:grid;
+  gap: 1rem;
+}
+
+.video-item{
+  border: 1px solid rgba(0,193,222,.12);
+  border-radius: 18px;
+  background:
+    radial-gradient(700px 260px at 18% 0%, rgba(0,193,222,.06), transparent 60%),
+    rgba(255,255,255,.03);
+  padding: 1rem;
+  display:grid;
+  gap: .5rem;
+
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.05);
+
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease,
+    border-color .22s ease,
+    filter .22s ease;
+  position: relative;
+}
+
+.video-item:hover{
+  transform: translateY(-2px);
+  border-color: rgba(0,193,222,.30);
+  filter: brightness(1.02);
+  box-shadow:
+    0 22px 46px rgba(0,0,0,.50),
+    0 18px 42px rgba(0,193,222,.08),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.video-item .file-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.video-item .file-name{
+  font-weight: 800;
+  color: var(--sr-ink);
+}
+
+.video-item .s3-key{
+  font-size: .82rem;
+  color: rgba(180,195,230,.70);
+  word-break: break-word;
+}
+
+.video-item .file-size{
+  font-size: .82rem;
+  color: rgba(180,195,230,.70);
+}
+
+/* OPEN link/button: consistent glass invert */
+.video-item .file-link{
+  appearance:none;
+  -webkit-appearance:none;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(0,193,222,.18);
+  display:inline-block;
+  padding: .55rem .75rem;
+  margin: 0;
+  font: inherit;
+  line-height: 1.2;
+  cursor:pointer;
+
+  color: var(--sr-cyan);
+  text-decoration: none;
+  border-radius: 999px;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+
+  transition:
+    background-color .18s ease,
+    color .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    transform .08s ease;
+}
+
+.video-item .file-link:hover{
+  background-color: var(--sr-cyan);
+  color: rgba(6,10,28,.95);
+  border-color: rgba(0,193,222,.70);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(0,193,222,.16);
+  transform: translateY(-1px);
+}
+
+.video-item .file-link:focus-visible{
+  outline:none;
+  box-shadow: 0 0 0 3px rgba(0,193,222,.28);
+}
+
+.video-item .file-link:disabled{
+  opacity: .55;
+  cursor:not-allowed;
+}
+
+/* Optional pill variant preserved */
+.video-item .file-link--btn{
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(0,193,222,.28);
+  padding: .35rem .7rem;
+  border-radius: 999px;
+  color: var(--sr-cyan);
+}
+.video-item .file-link--btn:hover{
+  background: var(--sr-cyan);
+  color: rgba(6,10,28,.95);
+  border-color: rgba(0,193,222,.75);
+}
+
+/* Remove button: consistent danger hover */
+.remove-btn{
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.14);
+  color: #ff8f8f;
+  cursor: pointer;
+  font-size: .95rem;
+  padding: .38rem .7rem;
+  border-radius: 999px;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+
+  transition:
+    color .18s ease,
+    border-color .18s ease,
+    background .18s ease,
+    box-shadow .18s ease,
+    transform .08s ease;
+}
+
+.remove-btn:hover{
+  color: #fff;
+  border-color: rgba(229,62,62,.65);
+  background: rgba(229,62,62,.18);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(229,62,62,.16);
+  transform: translateY(-1px);
+}
+
+.remove-btn:active{ transform: translateY(0); }
+
+/* Upload button: brand teal + subtle shine */
+.upload-btn{
+  padding: .7rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: .95rem;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(0,193,222,.95), rgba(0,140,165,.95));
+  border: 0;
+  cursor: pointer;
+
+  box-shadow:
+    0 16px 36px rgba(0,193,222,.16),
+    0 10px 26px rgba(0,0,0,.40),
+    inset 0 1px 0 rgba(255,255,255,.12);
+
+  position: relative;
+  overflow: hidden;
+
+  transition:
+    transform .08s ease,
+    filter .18s ease,
+    box-shadow .18s ease;
+}
+
+.upload-btn:hover:not(:disabled){
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow:
+    0 20px 46px rgba(0,193,222,.20),
+    0 12px 30px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.14);
+}
+.upload-btn:disabled{
+  opacity: .55;
+  cursor:not-allowed;
+}
+
+/* Clear button */
+.clear-btn{
+  padding: .7rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: .9rem;
+
+  color: var(--sr-ink);
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.12);
+  cursor:pointer;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+
+  transition:
+    background .18s ease,
+    color .18s ease,
+    border-color .18s ease,
+    transform .08s ease,
+    box-shadow .18s ease;
+}
+
+.clear-btn:hover{
+  color: var(--sr-cyan);
+  border-color: rgba(0,193,222,.45);
+  background: rgba(0,193,222,.10);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(0,193,222,.16);
+  transform: translateY(-1px);
+}
+.clear-btn:active{ transform: translateY(0); }
+
+/* -----------------------------------------
+   Utilities
+------------------------------------------ */
+.muted{ color: rgba(180,195,230,.72); }
+.mt-0{ margin-top: 0 !important; }
+.mt-1{ margin-top: .25rem !important; }
+.mt-2{ margin-top: .5rem !important; }
+.mt-3{ margin-top: .75rem !important; }
+
+/* -----------------------------------------
+   Reduced motion support
+------------------------------------------ */
+@media (prefers-reduced-motion: reduce){
+  .edit-course-page::before,
+  .edit-course-container::before,
+  .save-btn::before{
+    animation: none !important;
+  }
+  .edit-card,
+  .video-item,
+  .save-btn,
+  .upload-btn,
+  .clear-btn,
+  .edit-course-header .back-link,
+  .form-input,
+  .form-textarea{
+    transition: none !important;
+  }
+}
