@@ -128,124 +128,99 @@ router.get('/dashboard', async (req, res) => {
     const teamSpPrevRes = await db.query(teamSpQuery, [prevPeriodKey]);
 
     /* ===== CATEGORY TOTALS ===== */
-    const curQ = `
+    const categoryCurQ = `
       SELECT
-        COUNT(*) FILTER (WHERE LOWER(TRIM(activity_type)) IN
-          ('calls','emails','textmessages','doors knocked','presentations','appointments')
-        )::int AS combat_ops_current,
-
-        COUNT(*) FILTER (WHERE LOWER(TRIM(activity_type)) IN
-          ('networking events','referrals received','social media post')
-        )::int AS rd_intel_current,
-
-        COUNT(*) FILTER (WHERE LOWER(TRIM(activity_type)) IN
-          ('course_completed','video_completed')
-        )::int AS training_current
+        COUNT(*) FILTER (WHERE category_id = 1)::int AS combat_current,
+        COUNT(*) FILTER (WHERE category_id = 2)::int AS intel_current,
+        COUNT(*) FILTER (WHERE category_id = 3)::int AS training_current
       FROM activities
       WHERE date_logged::date >= ${startSql}
         AND date_logged::date <= ${endSql}
     `;
-    const prevQ = `
+    const categoryPrevQ = `
       SELECT
-        COUNT(*) FILTER (WHERE LOWER(TRIM(activity_type)) IN
-          ('calls','emails','textmessages','doors knocked','presentations','appointments')
-        )::int AS combat_ops_previous,
-
-        COUNT(*) FILTER (WHERE LOWER(TRIM(activity_type)) IN
-          ('networking events','referrals received','social media post')
-        )::int AS rd_intel_previous,
-
-        COUNT(*) FILTER (WHERE LOWER(TRIM(activity_type)) IN
-          ('course_completed','video_completed')
-        )::int AS training_previous
+        COUNT(*) FILTER (WHERE category_id = 1)::int AS combat_previous,
+        COUNT(*) FILTER (WHERE category_id = 2)::int AS intel_previous,
+        COUNT(*) FILTER (WHERE category_id = 3)::int AS training_previous
       FROM activities
       WHERE date_logged::date >= ${prevStartSql}
         AND date_logged::date <= ${prevEndSql}
     `;
-
-    const cur = (await db.query(curQ)).rows[0];
-    const prev = (await db.query(prevQ)).rows[0];
-
-    const category_totals = {
-      combat_ops: { current: cur.combat_ops_current, previous: prev.combat_ops_previous },
-      rd_intel: { current: cur.rd_intel_current, previous: prev.rd_intel_previous },
-      training: { current: cur.training_current, previous: prev.training_previous },
-    };
+    const [curCat, prevCat] = await Promise.all([db.query(categoryCurQ), db.query(categoryPrevQ)]);
 
     const dealsCurQ = `
       SELECT COUNT(*)::int AS deals_current
       FROM activities
-      WHERE LOWER(TRIM(activity_type)) = 'deals'
+      WHERE activity_type = 'Deals'
         AND date_logged::date >= ${startSql}
         AND date_logged::date <= ${endSql}
     `;
-
     const dealsPrevQ = `
       SELECT COUNT(*)::int AS deals_previous
       FROM activities
-      WHERE LOWER(TRIM(activity_type)) = 'deals'
+      WHERE activity_type = 'Deals'
         AND date_logged::date >= ${prevStartSql}
         AND date_logged::date <= ${prevEndSql}
     `;
-
     const dealsCurRes = await db.query(dealsCurQ);
     const dealsPrevRes = await db.query(dealsPrevQ);
 
     // -------------------------
+    // 🔥 Mission Distribution (percentages + dynamic insight helpers)
+    // -------------------------
+    const combatCur = Number(curCat.rows[0]?.combat_current || 0);
+    const intelCur = Number(curCat.rows[0]?.intel_current || 0);
+    const trainingCur = Number(curCat.rows[0]?.training_current || 0);
+
+    const missionTotal = combatCur + intelCur + trainingCur;
+    const safeTotal = missionTotal > 0 ? missionTotal : 1;
+
+    const combatPct = Math.round((combatCur / safeTotal) * 100);
+    const intelPct = Math.round((intelCur / safeTotal) * 100);
+    const trainingPct = Math.round((trainingCur / safeTotal) * 100);
+
+    let dominant = 'Combat';
+    if (intelCur >= combatCur && intelCur >= trainingCur) dominant = 'R&D / Intel';
+    else if (trainingCur >= combatCur && trainingCur >= intelCur) dominant = 'Training';
+
+    // -------------------------
     // Top Performers (FROM leaderboards) - exclude admins + blank names
+    // + include user rank from user_profile
     // -------------------------
     const topQuery = `
       SELECT
         u.user_id,
         u.name AS user_name,
+
+        -- [Unverified] Adjust this column name if your schema differs.
+        up.rank_name AS user_rank,
+
         COALESCE(lb.total_points, 0)::bigint AS sp,
         lb.rank,
 
-        -- Combat Ops per user
-        COUNT(*) FILTER (
-          WHERE LOWER(TRIM(a.activity_type)) IN
-            ('calls','emails','textmessages','doors knocked','presentations','appointments')
-            AND a.date_logged::date >= ${startSql}
-            AND a.date_logged::date <= ${endSql}
-        )::int AS combat_count,
-
-        -- Deals per user (Victories)
-        COUNT(*) FILTER (
-          WHERE LOWER(TRIM(a.activity_type)) = 'deals'
-            AND a.date_logged::date >= ${startSql}
-            AND a.date_logged::date <= ${endSql}
-        )::int AS deals_count,
-
-        -- R&D / Intel per user
-        COUNT(*) FILTER (
-          WHERE LOWER(TRIM(a.activity_type)) IN
-            ('networking events','referrals received','social media post')
-            AND a.date_logged::date >= ${startSql}
-            AND a.date_logged::date <= ${endSql}
-        )::int AS rd_intel_count,
-
-        -- Training per user
-        COUNT(*) FILTER (
-          WHERE LOWER(TRIM(a.activity_type)) IN
-            ('course_completed','video_completed')
-            AND a.date_logged::date >= ${startSql}
-            AND a.date_logged::date <= ${endSql}
-        )::int AS training_count
+        COUNT(*) FILTER (WHERE a.category_id = 1) AS combat_count,
+        COUNT(*) FILTER (WHERE a.category_id = 2) AS rd_intel_count,
+        COUNT(*) FILTER (WHERE a.category_id = 3) AS training_count,
+        COUNT(*) FILTER (WHERE a.activity_type = 'Deals') AS deals_count
 
       FROM leaderboards lb
       JOIN users u ON u.user_id = lb.user_id
+
+      LEFT JOIN user_profile up ON up.user_id = u.user_id
+
       LEFT JOIN activities a ON a.user_id = u.user_id
+        AND a.date_logged::date >= ${startSql}
+        AND a.date_logged::date <= ${endSql}
 
       WHERE lb.period = $1
         AND LOWER(COALESCE(u.role,'')) <> 'admin'
         AND u.name IS NOT NULL
         AND btrim(u.name) <> ''
 
-      GROUP BY u.user_id, u.name, lb.total_points, lb.rank
+      GROUP BY u.user_id, u.name, up.rank_name, lb.total_points, lb.rank
       ORDER BY lb.rank ASC
       LIMIT 10
     `;
-
     const topRes = await db.query(topQuery, [periodKey]);
 
     // -------------------------
@@ -338,7 +313,35 @@ router.get('/dashboard', async (req, res) => {
         deals_current: Number(dealsCurRes.rows[0]?.deals_current || 0),
         deals_previous: Number(dealsPrevRes.rows[0]?.deals_previous || 0),
       },
-      category_totals,
+      category_totals: {
+        combat_ops: {
+          current: combatCur,
+          previous: prevCat.rows[0]?.combat_previous || 0,
+        },
+        rd_intel: {
+          current: intelCur,
+          previous: prevCat.rows[0]?.intel_previous || 0,
+        },
+        training: {
+          current: trainingCur,
+          previous: prevCat.rows[0]?.training_previous || 0,
+        },
+      },
+
+      // ✅ NEW: mission distribution for the radar chart + dynamic insight
+      mission_distribution: {
+        combat_pct: combatPct,
+        intel_pct: intelPct,
+        training_pct: trainingPct,
+        dominant,
+        totals: {
+          combat: combatCur,
+          intel: intelCur,
+          training: trainingCur,
+          total: missionTotal,
+        },
+      },
+
       top_performers: topRes.rows || [],
       at_risk_reps: atRiskRes.rows || [],
       recent_activity: recentActivityRes.rows || [],

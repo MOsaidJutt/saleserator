@@ -349,25 +349,25 @@ router.post('/track/video', auth, async (req, res) => {
 
     if (definitiveCompleted) {
       await pool.query(
-        `INSERT INTO activities (user_id, activity_type, points, value, date_logged)
-         SELECT $1, 'video_completed', $2, $3, NOW()
+        `INSERT INTO activities (user_id, activity_type, points, value, date_logged, category_id)
+         SELECT $1, 'video_completed', $2, $3, NOW(), $4
          WHERE NOT EXISTS (
            SELECT 1 FROM activities
            WHERE user_id = $1 AND activity_type = 'video_completed' AND value = $3
          )`,
-        [userId, VIDEO_COMPLETION_POINTS, assetId],
+        [userId, VIDEO_COMPLETION_POINTS, assetId, 3],
       );
     }
     // Log course completion exactly once (transition to 100)
     if (percent >= 100 && prevPercent < 100) {
       await pool.query(
-        `INSERT INTO activities (user_id, activity_type, points, value, date_logged)
-         SELECT $1, 'course_completed', $2, $3, NOW()
+        `INSERT INTO activities (user_id, activity_type, points, value, date_logged, category_id)
+         SELECT $1, 'course_completed', $2, $3, NOW(), $4
          WHERE NOT EXISTS (
            SELECT 1 FROM activities
            WHERE user_id = $1 AND activity_type = 'course_completed' AND value = $3
          )`,
-        [userId, COURSE_COMPLETION_POINTS, courseId],
+        [userId, COURSE_COMPLETION_POINTS, courseId, 3],
       );
     }
 

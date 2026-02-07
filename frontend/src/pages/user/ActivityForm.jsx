@@ -16,9 +16,11 @@ const LABELS = {
   referralsReceived: 'Referrals Received',
 };
 
-function todayStr() {
-  return new Date().toISOString().split('T')[0];
-}
+const CATEGORY_IDS = {
+  combat: 1,
+  intel: 2,
+  training: 3,
+};
 
 const CATEGORIES = [
   { key: 'combat', label: 'Combat Ops' },
@@ -43,6 +45,12 @@ const MISSIONS_BY_CATEGORY = {
   ],
   training: [],
 };
+
+/* ----------------------------- HELPERS ----------------------------- */
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
 
 const clampInt = (n) => (Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0);
 
@@ -244,7 +252,17 @@ export default function ActivityPage() {
     y = y ?? window.innerHeight / 2;
 
     try {
-      const payload = { activityType: key, value, dateLogged: date };
+      const categoryId =
+        key === 'deals'
+          ? null
+          : CATEGORY_IDS[tab];
+
+      const payload = { 
+        activityType: key, 
+        value, 
+        categoryId,
+        dateLogged: date 
+      };
       const res = await api.post('/users/activity/log', payload);
 
       const awarded = clampInt(res?.data?.awardedPoints ?? predictedPts);

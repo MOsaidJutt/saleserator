@@ -41,155 +41,118 @@ function normalizeInboundType(s) {
 /* ------------------------------- Endpoints ------------------------------- */
 
 // routes/activity.js  (only the /log route updated)
-router.post("/log", auth, async (req, res) => {
-  const body = req.body || {};
-  const actingUserId = req.user.id;
+router.post('/log', auth, async (req, res) => {
+  const { activityType, value, categoryId, dateLogged = new Date() } = req.body;
+  const userId = req.user.id;
 
   try {
-    // ✅ SINGLE LOG (Mission Log uses this)
-    const { activityType, value, dateLogged = new Date() } = body;
-    const normalizedType = normalizeInboundType(activityType);
-
-    if (!normalizedType || value == null) {
-      return res
-        .status(400)
-        .json({ ok: false, error: "activityType and value are required" });
+    if (!activityType || value == null) {
+      return res.status(400).json({
+        ok: false,
+        error: 'activityType and value are required',
+      });
     }
 
-    const { rows: rule } = await pool.query(
+    // Deals are allowed to have NULL category_id
+    if (normalizeInboundType(activityType) !== 'Deals' && !categoryId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'categoryId is required for this activity',
+      });
+    }
+
+    const normalizedType = normalizeInboundType(activityType);
+
+    const { rows: ruleRows } = await pool.query(
       `
       SELECT points_per_unit
-        FROM activity_point_rules
-       WHERE activity_type = $1
-         AND is_active = TRUE
+      FROM activity_point_rules
+      WHERE activity_type = $1
+        AND is_active = TRUE
       `,
       [normalizedType]
     );
 
-    if (!rule.length) {
+    if (!ruleRows.length) {
       return res.status(400).json({
         ok: false,
-        error: `No active rule found for activityType "${normalizedType}"`,
+        error: `No active rule found for "${normalizedType}"`,
       });
     }
 
-    const ppu = Number(rule[0].points_per_unit) || 0;
     const qty = Number(value) || 0;
-    const points = qty * ppu;
+    const points = qty * Number(ruleRows[0].points_per_unit || 0);
 
-    // ✅ SAFE date handling (no timezone shifting if it's already YYYY-MM-DD)
-    let activityDateParam;
-    if (typeof dateLogged === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateLogged)) {
-      activityDateParam = dateLogged;
-    } else {
-      activityDateParam = new Date(dateLogged || Date.now()).toISOString().slice(0, 10);
-    }
+    const activityDate =
+      typeof dateLogged === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateLogged)
+        ? dateLogged
+        : new Date(dateLogged).toISOString().slice(0, 10);
 
-    const { rows: insRows } = await pool.query(
+    const { rows } = await pool.query(
       `
-      INSERT INTO activities (user_id, activity_type, points, value, date_logged)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO activities (
+        user_id,
+        activity_type,
+        category_id,
+        points,
+        value,
+        date_logged
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING activity_id
       `,
-      [actingUserId, normalizedType, points, qty, activityDateParam]
+      [userId, normalizedType, categoryId, points, qty, activityDate]
     );
 
-    const activityId = insRows?.[0]?.activity_id || null;
+    const activityId = rows[0].activity_id;
 
-    // refresh snapshots (non-blocking)
-    ["daily", "weekly", "monthly", "all"].forEach((p) => {
+    // Refresh leaderboard snapshots (non-blocking)
+    ['daily', 'weekly', 'monthly', 'all'].forEach(period => {
       pool
-        .query("SELECT refresh_leaderboard($1::text, $2::date)", [
-          p,
-          activityDateParam,
-        ])
-        .catch((err) => console.error(`refresh_leaderboard ${p} failed`, err));
+        .query(
+          'SELECT refresh_leaderboard($1::text, $2::date)',
+          [period, activityDate]
+        )
+        .catch(() => {});
     });
 
-    // ✅ Get user name once (used by TV + rank broadcasts)
-    let userName = "Someone";
-    try {
-      const { rows: uRows } = await pool.query(
-        "SELECT name FROM users WHERE user_id=$1",
-        [actingUserId]
-      );
-      userName = uRows?.[0]?.name || userName;
-    } catch (e) {
-      console.error("fetch user name failed", e);
-    }
+    // Update rank
+    const rankInfo = await updateUserRank(userId).catch(() => null);
 
-    // ✅ Update rank snapshot + broadcast rank up
-    // NOTE: add these imports at the TOP of the file:
-    // const { updateUserRank } = require("../../utils/rankEngine");
-    // const { broadcast } = require("../../utils/tvEvents");
-    let rankPayload = null;
-    try {
-      const rankInfo = await updateUserRank(actingUserId);
+    // TV broadcasts
+    broadcast('activity_logged', {
+      userId,
+      activityType: normalizedType,
+      categoryId,
+      points,
+      ts: new Date().toISOString(),
+    });
 
-      rankPayload = {
-        totalSp: rankInfo.totalSp,
-        rankName: rankInfo.rankName,
-        prevRankName: rankInfo.prevRankName,
-        rankedUp: rankInfo.rankedUp,
-      };
-
-      if (rankInfo.rankedUp) {
-        broadcast("rank_up", {
-          userId: actingUserId,
-          userName,
-          prevRank: rankInfo.prevRankName,
-          newRank: rankInfo.rankName,
-          totalSp: rankInfo.totalSp,
-          ts: new Date().toISOString(),
-        });
-      }
-    } catch (e) {
-      console.error("rank update failed", e);
-    }
-
-    // ✅ TV BROADCAST (activity + deal)
-    try {
-      broadcast("activity_logged", {
-        userId: actingUserId,
-        userName,
-        activityType: normalizedType,
-        value: qty,
+    if (normalizedType === 'Deals') {
+      broadcast('deal_closed', {
+        userId,
         points,
-        date: activityDateParam,
-        activityId,
         ts: new Date().toISOString(),
       });
-
-      if (normalizedType.toLowerCase().includes("deal")) {
-        broadcast("deal_closed", {
-          userId: actingUserId,
-          userName,
-          points,
-          ts: new Date().toISOString(),
-        });
-      }
-    } catch (e) {
-      console.error("TV broadcast failed", e);
     }
 
     return res.json({
       ok: true,
-      insertedCount: 1,
       awardedPoints: points,
       activity: {
         activityId,
         activityType: normalizedType,
-        value: qty,
+        categoryId,
         points,
-        date: activityDateParam,
+        date: activityDate,
       },
-      rank: rankPayload, // ✅ frontend can show Rank Up popup instantly
+      rank: rankInfo,
     });
   } catch (err) {
-    console.error("Error in /activity/log", err);
+    console.error('POST /activity/log error:', err);
     return res.status(500).json({
       ok: false,
-      error: err?.message || "Failed to log activity",
+      error: 'Failed to log activity',
     });
   }
 });

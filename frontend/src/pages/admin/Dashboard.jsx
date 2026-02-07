@@ -3,6 +3,7 @@ import api from "../../api";
 import Nav from "../../components/Navbar";
 import { motion } from "framer-motion";
 import "../../components/adminuistyles/Dashboard.css";
+import MissionDistributionChart from "../../components/MissionDistributionChart";
 
 const PERIODS = [
   { key: "daily", label: "Daily" },
@@ -160,6 +161,8 @@ export default function AdminDashboard() {
   const trainingCur = data?.category_totals?.training?.current ?? 0;
   const trainingPrev = data?.category_totals?.training?.previous ?? 0;
 
+  const md = data?.mission_distribution;
+
   return (
     <div>
       <Nav />
@@ -280,7 +283,7 @@ export default function AdminDashboard() {
                           </td>
                           <td>
                             <div className="cc-agent">{r.user_name}</div>
-                            <div className="cc-agent-sub">—</div>
+                            <div className="cc-agent-sub">{r.user_rank || "Unranked"}</div>
                           </td>
                           <td className="cc-right">{formatNum(r.combat_count)}</td>
                           <td className="cc-right">{formatNum(r.rd_intel_count)}</td>
@@ -300,19 +303,26 @@ export default function AdminDashboard() {
             </div>
           </motion.div>
 
-          {/* Mission distribution side panel */}
-          <motion.div className="cc-side" {...cardMotion}>
-            <h3 className="cc-card-title" style={{ marginBottom: 10 }}>
-              Mission Distribution
-            </h3>
+          <motion.div
+            className="cc-side"
+            data-dominant={md?.dominant}
+          >
+            <h3 className="cc-card-title">Mission Distribution</h3>
 
-            <div className="admin-subtle">
-              Training (course/video completions) is ignored for now per your setup.
-            </div>
+            <MissionDistributionChart
+              combat={md?.combat_pct || 0}
+              intel={md?.intel_pct || 0}
+              training={md?.training_pct || 0}
+            />
 
             <div className="cc-insight">
-              <strong style={{ color: "white" }}>Insight:</strong> R&amp;D/Intel activities logged:{" "}
-              <strong style={{ color: "white" }}>{formatNum(intelCur)}</strong> this period.
+              <strong>Insight:</strong>{" "}
+              {md?.dominant === "Combat" &&
+                "Combat-heavy activity detected. Push prospecting and intel work."}
+              {md?.dominant === "R&D / Intel" &&
+                "R&D / Intel dominates this period. Balance with execution."}
+              {md?.dominant === "Training" &&
+                "Training-heavy period detected. Encourage live deal activity."}
             </div>
           </motion.div>
 
