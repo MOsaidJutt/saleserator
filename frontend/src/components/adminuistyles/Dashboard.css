@@ -501,12 +501,6 @@ body{
   }
 }
 
-/* =========================================================
-   TV MODE POLISH
-   ========================================================= */
-
-
-
 /* Reduced motion safety */
 @media (prefers-reduced-motion: reduce){
   .cc-side canvas{
