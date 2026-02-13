@@ -11,7 +11,7 @@ function sendSse(res, event, data) {
  * Register an SSE client
  * @param {import("express").Response} res
  */
-export function addClient(res) {
+function addClient(res) {
   clients.add(res);
 
   // keep-alive ping (proxies kill idle connections)
@@ -30,7 +30,7 @@ export function addClient(res) {
 /**
  * Broadcast to all connected TV screens
  */
-export function broadcast(event, data) {
+function broadcast(event, data) {
   for (const res of clients) {
     try {
       sendSse(res, event, data);
@@ -39,3 +39,5 @@ export function broadcast(event, data) {
     }
   }
 }
+
+module.exports = { addClient, broadcast };

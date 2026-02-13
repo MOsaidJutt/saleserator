@@ -3,17 +3,16 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../../db');
 const { auth } = require('../../middleware/auth');
-const { broadcast } = require("../../utils/tvEvents.js"); // <-- path adjust
-const { updateUserRank } = require("../../utils/updateUserRank");
+const { broadcast } = require('../../utils/tvEvents');
+const { updateUserRank } = require('../../utils/updateUserRank');
+const { validate, activityLogSchema } = require('../../utils/validators');
 
-/* ----------------------------- Type helpers ------------------------------ */
-
-/** "textMessages" -> "Text Messages", "doors_knocked" -> "Doors Knocked" */
 function toTitleWithSpaces(s) {
   if (!s) return '';
   const spaced = String(s)
     .replace(/[_-]+/g, ' ')
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+
   return spaced
     .trim()
     .split(/\s+/)
@@ -21,7 +20,6 @@ function toTitleWithSpaces(s) {
     .join(' ');
 }
 
-/** "Text Messages" -> "textMessages" (for back-compat /weights map) */
 function toCamelCase(s) {
   return String(s)
     .trim()
@@ -31,136 +29,122 @@ function toCamelCase(s) {
     .join('');
 }
 
-/** Normalize inbound type to match DB naming in activity_point_rules.activity_type */
 function normalizeInboundType(s) {
   const t = String(s || '').trim();
   if (!t) return '';
-  return /^[A-Z]/.test(t) && t.includes(' ') ? t : toTitleWithSpaces(t);
+  return /^[A-Z]/.test(t) && t.includes(' ')
+    ? t
+    : toTitleWithSpaces(t);
 }
 
-/* ------------------------------- Endpoints ------------------------------- */
+router.post(
+  '/log',
+  auth,
+  validate(activityLogSchema),
+  async (req, res) => {
+    const { activityType, value, categoryId, dateLogged } = req.body;
+    const userId = req.user.id;
 
-// routes/activity.js  (only the /log route updated)
-router.post('/log', auth, async (req, res) => {
-  const { activityType, value, categoryId, dateLogged = new Date() } = req.body;
-  const userId = req.user.id;
+    try {
+      const normalizedType = normalizeInboundType(activityType);
 
-  try {
-    if (!activityType || value == null) {
-      return res.status(400).json({
-        ok: false,
-        error: 'activityType and value are required',
-      });
-    }
+      const { rows: ruleRows } = await pool.query(
+        `
+        SELECT points_per_unit
+        FROM activity_point_rules
+        WHERE activity_type = $1
+          AND is_active = TRUE
+        `,
+        [normalizedType]
+      );
 
-    // Deals are allowed to have NULL category_id
-    if (normalizeInboundType(activityType) !== 'Deals' && !categoryId) {
-      return res.status(400).json({
-        ok: false,
-        error: 'categoryId is required for this activity',
-      });
-    }
+      if (!ruleRows.length) {
+        return res.status(400).json({
+          ok: false,
+          error: `No active rule found for "${normalizedType}"`,
+        });
+      }
 
-    const normalizedType = normalizeInboundType(activityType);
+      const qty = Number(value);
+      const points = qty * Number(ruleRows[0].points_per_unit || 0);
 
-    const { rows: ruleRows } = await pool.query(
-      `
-      SELECT points_per_unit
-      FROM activity_point_rules
-      WHERE activity_type = $1
-        AND is_active = TRUE
-      `,
-      [normalizedType]
-    );
-
-    if (!ruleRows.length) {
-      return res.status(400).json({
-        ok: false,
-        error: `No active rule found for "${normalizedType}"`,
-      });
-    }
-
-    const qty = Number(value) || 0;
-    const points = qty * Number(ruleRows[0].points_per_unit || 0);
-
-    const activityDate =
-      typeof dateLogged === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateLogged)
+      const activityDate = dateLogged
         ? dateLogged
-        : new Date(dateLogged).toISOString().slice(0, 10);
+        : new Date().toISOString().slice(0, 10);
 
-    const { rows } = await pool.query(
-      `
-      INSERT INTO activities (
-        user_id,
-        activity_type,
-        category_id,
-        points,
-        value,
-        date_logged
-      )
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING activity_id
-      `,
-      [userId, normalizedType, categoryId, points, qty, activityDate]
-    );
-
-    const activityId = rows[0].activity_id;
-
-    // Refresh leaderboard snapshots (non-blocking)
-    ['daily', 'weekly', 'monthly', 'all'].forEach(period => {
-      pool
-        .query(
-          'SELECT refresh_leaderboard($1::text, $2::date)',
-          [period, activityDate]
+      const { rows } = await pool.query(
+        `
+        INSERT INTO activities (
+          user_id,
+          activity_type,
+          category_id,
+          points,
+          value,
+          date_logged
         )
-        .catch(() => {});
-    });
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING activity_id
+        `,
+        [userId, normalizedType, categoryId ?? null, points, qty, activityDate]
+      );
 
-    // Update rank
-    const rankInfo = await updateUserRank(userId).catch(() => null);
+      const activityId = rows[0].activity_id;
 
-    // TV broadcasts
-    broadcast('activity_logged', {
-      userId,
-      activityType: normalizedType,
-      categoryId,
-      points,
-      ts: new Date().toISOString(),
-    });
-
-    if (normalizedType === 'Deals') {
-      broadcast('deal_closed', {
-        userId,
-        points,
-        ts: new Date().toISOString(),
+      // Refresh leaderboard snapshots (non-blocking)
+      ['daily', 'weekly', 'monthly', 'all'].forEach((period) => {
+        pool
+          .query(
+            'SELECT refresh_leaderboard($1::text, $2::date)',
+            [period, activityDate]
+          )
+          .catch(() => {});
       });
-    }
 
-    return res.json({
-      ok: true,
-      awardedPoints: points,
-      activity: {
-        activityId,
+      // Update rank
+      const rankInfo = await updateUserRank(userId).catch(() => null);
+
+      // Broadcast events
+      broadcast('activity_logged', {
+        userId,
         activityType: normalizedType,
         categoryId,
         points,
-        date: activityDate,
-      },
-      rank: rankInfo,
-    });
-  } catch (err) {
-    console.error('POST /activity/log error:', err);
-    return res.status(500).json({
-      ok: false,
-      error: 'Failed to log activity',
-    });
-  }
-});
+        ts: new Date().toISOString(),
+      });
 
-// GET /users/activity/today?date=YYYY-MM-DD
+      if (normalizedType === 'Deals') {
+        broadcast('deal_closed', {
+          userId,
+          points,
+          ts: new Date().toISOString(),
+        });
+      }
+
+      return res.json({
+        ok: true,
+        awardedPoints: points,
+        activity: {
+          activityId,
+          activityType: normalizedType,
+          categoryId,
+          points,
+          date: activityDate,
+        },
+        rank: rankInfo,
+      });
+    } catch (err) {
+      console.error('POST /activity/log error:', err);
+      return res.status(500).json({
+        ok: false,
+        error: 'Failed to log activity',
+      });
+    }
+  }
+);
+
 router.get('/today', auth, async (req, res) => {
   try {
-    const userId = req.user_id ?? req.user?.user_id ?? req.user?.id;
+    const userId = req.user?.id;
     const date = req.query.date;
 
     if (!userId) return res.status(401).json({ error: 'Unauthorized.' });
@@ -183,10 +167,9 @@ router.get('/today', auth, async (req, res) => {
   }
 });
 
-// GET /users/activity/recent?date=YYYY-MM-DD&limit=12
 router.get('/recent', auth, async (req, res) => {
   try {
-    const userId = req.user_id ?? req.user?.user_id ?? req.user?.id;
+    const userId = req.user?.id;
     const date = req.query.date;
     const limit = Math.min(50, Math.max(1, Number(req.query.limit || 12)));
 
@@ -206,9 +189,9 @@ router.get('/recent', auth, async (req, res) => {
     );
 
     return res.json({
-      items: rows.map(r => ({
+      items: rows.map((r) => ({
         activityId: r.activity_id,
-        activityType: r.activity_type, // Title Case in DB
+        activityType: r.activity_type,
         points: Number(r.points || 0),
         dateLogged: r.date_logged,
       })),
@@ -219,36 +202,30 @@ router.get('/recent', auth, async (req, res) => {
   }
 });
 
-/**
- * GET /activity/rules
- * Returns active rules in display order for the UI.
- */
 router.get('/rules', auth, async (_req, res) => {
   const { rows } = await pool.query(
     `SELECT activity_type, points_per_unit, sort_order
        FROM activity_point_rules
       WHERE is_active = TRUE
-      ORDER BY sort_order, activity_type`,
+      ORDER BY sort_order, activity_type`
   );
+
   res.json({ items: rows });
 });
 
-/**
- * GET /activity/weights  (back-compat)
- * Returns a { camelCaseKey: points_per_unit } map derived from DB rules,
- * so existing UI that expects /weights continues to work.
- */
 router.get('/weights', auth, async (_req, res) => {
   const { rows } = await pool.query(
     `SELECT activity_type, points_per_unit
        FROM activity_point_rules
       WHERE is_active = TRUE
-      ORDER BY sort_order, activity_type`,
+      ORDER BY sort_order, activity_type`
   );
+
   const map = {};
   for (const r of rows) {
     map[toCamelCase(r.activity_type)] = Number(r.points_per_unit);
   }
+
   res.json(map);
 });
 

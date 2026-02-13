@@ -1,7 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { tvAuth } = require('../middleware/tvAuth.js');
-const { addClient } = require("../utils/tvEvents.js");
+const { addClient } = require("../utils/tvEvents");
 
 const router = express.Router();
 

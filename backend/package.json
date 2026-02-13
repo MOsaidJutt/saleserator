@@ -4,9 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "lint": "eslint . --fix",
     "format": "prettier --write ."
+  },
+  "jest": {
+  "testEnvironment": "node",
+  "testMatch": ["**/*.test.js"]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.894.0",
@@ -27,6 +32,8 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
-    "prettier": "^3.6.2"
+    "jest": "^30.2.0",
+    "prettier": "^3.6.2",
+    "supertest": "^7.2.2"
   }
 }

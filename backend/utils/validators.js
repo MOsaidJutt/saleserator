@@ -21,13 +21,24 @@ const signupSchema = z.object({
 
 const activityLogSchema = z.object({
   activityType: z.string().min(1, 'Activity type is required'),
-  value: z.number().min(0, 'Value must be positive'),
+
+  value: z.number().int().positive('Value must be greater than 0'),
+
+  categoryId: z.number().int().positive().nullable().optional(),
+
   dateLogged: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
-    .optional()
+    .optional(),
+}).superRefine((data, ctx) => {
+  if (data.activityType !== 'deals' && !data.categoryId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'categoryId is required for this activity',
+      path: ['categoryId'],
+    });
+  }
 });
-
 /* ===============================
    Middleware Helper
 ================================ */
