@@ -6,7 +6,6 @@ export default function SuperAdmin() {
   const [companies, setCompanies] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [companyName, setCompanyName] = useState('');
-  const [subdomain, setSubdomain] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [tagline, setTagline] = useState('');
   const [adminName, setAdminName] = useState('');
@@ -55,20 +54,18 @@ export default function SuperAdmin() {
   const handleCreateCompany = async (e) => {
     e.preventDefault();
     setMessage('');
-    if (!companyName.trim() || !subdomain.trim()) {
-      setMessage('Company name and subdomain are required');
+    if (!companyName.trim()) {
+      setMessage('Company name is required');
       return;
     }
     try {
       await api.post('/superadmin/create-company', {
         name: companyName,
-        subdomain,
         logo_url: logoUrl,
         tagline,
       });
       setMessage(`Company ${companyName} created successfully!`);
       setCompanyName('');
-      setSubdomain('');
       setLogoUrl('');
       setTagline('');
       fetchCompanies(); // Refresh company list
@@ -123,13 +120,10 @@ export default function SuperAdmin() {
     }
   };
 
-  // Pagination logic for companies and admins
+  // Pagination logic
   const indexOfLastCompany = currentCompanyPage * companiesPerPage;
   const indexOfFirstCompany = indexOfLastCompany - companiesPerPage;
-  const currentCompanies = companies.slice(
-    indexOfFirstCompany, 
-    indexOfLastCompany,
-  );
+  const currentCompanies = companies.slice(indexOfFirstCompany, indexOfLastCompany);
 
   const indexOfLastAdmin = currentAdminPage * adminsPerPage;
   const indexOfFirstAdmin = indexOfLastAdmin - adminsPerPage;
@@ -151,8 +145,8 @@ export default function SuperAdmin() {
           <table className="company-table">
             <thead>
               <tr>
+                <th>Company ID</th>
                 <th>Name</th>
-                <th>Subdomain</th>
                 <th>Logo URL</th>
                 <th>Tag line</th>
               </tr>
@@ -160,9 +154,9 @@ export default function SuperAdmin() {
             <tbody>
               {currentCompanies.map((company) => (
                 <tr key={company.company_id}>
+                  <td>{company.company_id}</td>
                   <td>{company.name}</td>
-                  <td>{company.subdomain}</td>
-                  <td>{company.logoUrl}</td>
+                  <td>{company.logo_url}</td>
                   <td>{company.tagline}</td>
                 </tr>
               ))}
@@ -177,10 +171,7 @@ export default function SuperAdmin() {
             </button>
             <button
               onClick={() => paginateCompanies(currentCompanyPage + 1)}
-              disabled={
-                currentCompanyPage === 
-                Math.ceil(companies.length / companiesPerPage)
-              }
+              disabled={currentCompanyPage === Math.ceil(companies.length / companiesPerPage)}
             >
               Next
             </button>
@@ -229,16 +220,6 @@ export default function SuperAdmin() {
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="Company Name"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="label">Subdomain</label>
-                  <input
-                    className="input-field"
-                    value={subdomain}
-                    onChange={(e) => setSubdomain(e.target.value)}
-                    placeholder="Company Subdomain"
                     required
                   />
                 </div>
@@ -302,9 +283,7 @@ export default function SuperAdmin() {
             </button>
             <button
               onClick={() => paginateAdmins(currentAdminPage + 1)}
-              disabled={
-                currentAdminPage === Math.ceil(admins.length / adminsPerPage)
-              }
+              disabled={currentAdminPage === Math.ceil(admins.length / adminsPerPage)}
             >
               Next
             </button>

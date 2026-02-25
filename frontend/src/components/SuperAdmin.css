@@ -1,4 +1,5 @@
 /* Container for each section */
+/* Adjusted Existing Companies/Admins Boxes */
 .existing-container {
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: #0f1624;
@@ -6,35 +7,38 @@
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 
-  /* Center alignment */
   max-width: 70rem;
   margin: 2rem auto;
-
-  /* no side padding so header touches rounded edges */
-  padding-left: 0;
-  padding-right: 0;
-}
-/* Table Styling */
-.table-container {
-  overflow-x: auto;
+  padding: 1.5rem 2rem; /* Add consistent inner padding */
 }
 
+/* Add a clear header for existing sections */
+.existing-container span {
+  display: block;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #00c1de;
+  margin-bottom: 1rem;
+}
+
+/* Table adjustments */
 .company-table,
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  table-layout: fixed; /* prevent stretching */
+  border-radius: 15px;
   overflow: hidden;
 }
 
 .company-table th,
 .company-table td,
 .admin-table th,
-.admin-table thead {
-  padding: 14px 22px; /* Increased padding */
+.admin-table td {
+  padding: 16px 22px;
   text-align: left;
+  font-size: 1rem;
   border-bottom: 1px solid #1e293b;
-  font-size: 1rem; /* Adjust font size for better clarity */
 }
 
 .company-table th,
@@ -42,7 +46,6 @@
   background-color: #0f1624;
   color: #00c1de;
   font-weight: 700;
-  letter-spacing: 0.5px; /* Adjust letter spacing for headings */
 }
 
 .company-table td,
@@ -52,26 +55,38 @@
 }
 
 .company-table tr:hover td,
-.admin-table tr:hover td{
+.admin-table tr:hover td {
   background-color: #1e293b;
-  cursor: pointer; /* Ensure it feels interactive */
 }
 
-/* Empty State */
-.empty {
-  padding: 20px;
-  text-align: center;
-  color: #9fb0c7;
-}
-
-/* Pagination */
+/* Pagination adjustments */
 .pagination {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 1rem;
 }
 
+.pagination button {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  background-color: #4c51bf;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #434190;
+  transform: translateY(-1px);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 /* Wrapper that holds the trigger + the form (centered, no side padding) */
 .create-collapsible {
   border: 1px solid rgba(255, 255, 255, 0.06);

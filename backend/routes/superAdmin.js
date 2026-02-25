@@ -9,21 +9,16 @@ const router = express.Router();
    CREATE COMPANY
 ====================================================== */
 router.post("/create-company", async (req, res) => {
-  const { name, subdomain, logo_url, tagline } = req.body;
+  const { name, logo_url, tagline } = req.body;
 
   try {
-    const existingCompany = await pool.query(
-      "SELECT * FROM companies WHERE subdomain = $1",
-      [subdomain]
-    );
-
-    if (existingCompany.rows.length > 0) {
-      return res.status(400).json({ error: "Subdomain already taken" });
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ error: "Company name is required" });
     }
 
     const newCompany = await pool.query(
-      "INSERT INTO companies (name, subdomain, logo_url, tagline) VALUES ($1, $2, $3, $4) RETURNING *",
-      [name, subdomain, logo_url, tagline]
+      "INSERT INTO companies (name, logo_url, tagline) VALUES ($1, $2, $3) RETURNING *",
+      [name, logo_url || null, tagline || null]
     );
 
     res.status(201).json({
@@ -125,7 +120,7 @@ router.post("/assign-admin-to-company", async (req, res) => {
 ====================================================== */
 router.get("/companies", async (req, res) => {
   try {
-    const companies = await pool.query("SELECT * FROM companies");
+    const companies = await pool.query("SELECT * FROM companies ORDER BY company_id ASC");
     res.json(companies.rows);
   } catch (err) {
     console.error("Error fetching companies:", err);
@@ -140,16 +135,15 @@ router.get("/admins", async (req, res) => {
   try {
     const query = `
       SELECT users.user_id, users.name AS admin_name, users.email,
-             COALESCE(companies.name, 'No Company') AS company_name
+             COALESCE(companies.name, 'No Company') AS company_name,
+             users.company_id
       FROM users
       LEFT JOIN companies ON users.company_id = companies.company_id
       WHERE users.role = 'admin'
+      ORDER BY users.user_id ASC
     `;
     
     const admins = await pool.query(query);
-
-    if (admins.rows.length === 0)
-      return res.status(404).json({ error: "No admins found" });
 
     res.json(admins.rows);
   } catch (err) {
