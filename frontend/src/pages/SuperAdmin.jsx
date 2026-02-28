@@ -5,28 +5,29 @@ import '../components/SuperAdmin.css';
 export default function SuperAdmin() {
   const [companies, setCompanies] = useState([]);
   const [admins, setAdmins] = useState([]);
+
+  // Create Company
   const [companyName, setCompanyName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [tagline, setTagline] = useState('');
+
+  // Create Admin
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  const [assignAdminEmail, setAssignAdminEmail] = useState('');
-  const [companyId, setCompanyId] = useState('');
+  const [adminCompanyId, setAdminCompanyId] = useState('');
+
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState(''); // 'success' | 'error'
+
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
-  const [isAssignAdminOpen, setIsAssignAdminOpen] = useState(false);
 
-  // Pagination state
+  // Pagination
   const [currentCompanyPage, setCurrentCompanyPage] = useState(1);
   const [currentAdminPage, setCurrentAdminPage] = useState(1);
   const companiesPerPage = 5;
   const adminsPerPage = 5;
-
-  const toggleCreateCompany = () => setIsCreateCompanyOpen((v) => !v);
-  const toggleCreateAdmin = () => setIsCreateAdminOpen((v) => !v);
-  const toggleAssignAdmin = () => setIsAssignAdminOpen((v) => !v);
 
   useEffect(() => {
     fetchCompanies();
@@ -51,72 +52,52 @@ export default function SuperAdmin() {
     }
   };
 
+  const showMessage = (text, type = 'success') => {
+    setMessage(text);
+    setMessageType(type);
+  };
+
   const handleCreateCompany = async (e) => {
     e.preventDefault();
     setMessage('');
-    if (!companyName.trim()) {
-      setMessage('Company name is required');
-      return;
-    }
     try {
-      await api.post('/superadmin/create-company', {
+      const res = await api.post('/superadmin/create-company', {
         name: companyName,
         logo_url: logoUrl,
         tagline,
       });
-      setMessage(`Company ${companyName} created successfully!`);
+      showMessage(res.data.message || `Company "${companyName}" created successfully!`, 'success');
       setCompanyName('');
       setLogoUrl('');
       setTagline('');
-      fetchCompanies(); // Refresh company list
+      fetchCompanies();
     } catch (err) {
-      setMessage(`Error: ${err.message || 'Failed to create company'}`);
+      showMessage(err.response?.data?.error || 'Failed to create company', 'error');
     }
   };
 
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
     setMessage('');
-    if (!adminName.trim() || !adminEmail.trim() || !adminPassword.trim()) {
-      setMessage('Admin name, email, and password are required');
+    if (!adminCompanyId) {
+      showMessage('Please select a company for this admin', 'error');
       return;
     }
     try {
-      await api.post('/superadmin/create-admin', {
+      const res = await api.post('/superadmin/create-admin', {
         name: adminName,
         email: adminEmail,
         password: adminPassword,
+        company_id: adminCompanyId,
       });
-      setMessage(`Admin ${adminName} created successfully!`);
+      showMessage(res.data.message || `Admin "${adminName}" created successfully!`, 'success');
       setAdminName('');
       setAdminEmail('');
       setAdminPassword('');
+      setAdminCompanyId('');
       fetchAdmins();
     } catch (err) {
-      setMessage(`Error: ${err.message || 'Failed to create admin'}`);
-    }
-  };
-
-  const handleAssignAdminToCompany = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    if (!companyId || !assignAdminEmail) {
-      setMessage('Admin and company are required');
-      return;
-    }
-    try {
-      const adminRes = await api.get(`/superadmin/admins/${assignAdminEmail}`);
-      const adminId = adminRes.data.user_id;
-
-      await api.post('/superadmin/assign-admin-to-company', {
-        adminId,
-        companyId,
-      });
-      setMessage(`Admin assigned to company successfully!`);
-    } catch (err) {
-      setMessage(
-        `Error: ${err.message || 'Failed to assign admin to company'}`,
-      );
+      showMessage(err.response?.data?.error || 'Failed to create admin', 'error');
     }
   };
 
@@ -129,8 +110,24 @@ export default function SuperAdmin() {
   const indexOfFirstAdmin = indexOfLastAdmin - adminsPerPage;
   const currentAdmins = admins.slice(indexOfFirstAdmin, indexOfLastAdmin);
 
-  const paginateCompanies = (pageNumber) => setCurrentCompanyPage(pageNumber);
-  const paginateAdmins = (pageNumber) => setCurrentAdminPage(pageNumber);
+  const Chevron = ({ open }) => (
+    <svg
+      className={`chevron ${open ? 'chevron-rotate' : ''}`}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 
   return (
     <div className="super-admin-panel">
@@ -138,17 +135,18 @@ export default function SuperAdmin() {
         Super Admin Panel
       </h2>
 
-      {/* Companies Section */}
+      {/* ── Existing Companies ── */}
       <section className="existing-container">
         <span>Existing Companies</span>
         <div className="table-container">
           <table className="company-table">
             <thead>
               <tr>
-                <th>Company ID</th>
+                <th>ID</th>
                 <th>Name</th>
+                <th>Slug</th>
                 <th>Logo URL</th>
-                <th>Tag line</th>
+                <th>Tagline</th>
               </tr>
             </thead>
             <tbody>
@@ -156,22 +154,23 @@ export default function SuperAdmin() {
                 <tr key={company.company_id}>
                   <td>{company.company_id}</td>
                   <td>{company.name}</td>
-                  <td>{company.logo_url}</td>
-                  <td>{company.tagline}</td>
+                  <td><code>{company.slug}</code></td>
+                  <td>{company.logo_url || '—'}</td>
+                  <td>{company.tagline || '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div className="pagination">
             <button
-              onClick={() => paginateCompanies(currentCompanyPage - 1)}
+              onClick={() => setCurrentCompanyPage((p) => p - 1)}
               disabled={currentCompanyPage === 1}
             >
               Previous
             </button>
             <button
-              onClick={() => paginateCompanies(currentCompanyPage + 1)}
-              disabled={currentCompanyPage === Math.ceil(companies.length / companiesPerPage)}
+              onClick={() => setCurrentCompanyPage((p) => p + 1)}
+              disabled={currentCompanyPage >= Math.ceil(companies.length / companiesPerPage)}
             >
               Next
             </button>
@@ -179,42 +178,23 @@ export default function SuperAdmin() {
         </div>
       </section>
 
-      {/* Create Company Section */}
-      <section
-        id="createCompany"
-        className={`create-collapsible ${isCreateCompanyOpen ? 'is-open' : ''}`}
-      >
+      {/* ── Create Company ── */}
+      <section className={`create-collapsible ${isCreateCompanyOpen ? 'is-open' : ''}`}>
         <button
           type="button"
           className="collapsible-trigger"
-          onClick={toggleCreateCompany}
+          onClick={() => setIsCreateCompanyOpen((v) => !v)}
           aria-expanded={isCreateCompanyOpen}
-          aria-controls="createCompanyOpen"
         >
           <span>Create a New Company</span>
-          <svg
-            className={`chevron ${isCreateCompanyOpen ? 'chevron-rotate' : ''}`}
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 9l6 6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <Chevron open={isCreateCompanyOpen} />
         </button>
-        <div id="createCompanyOpen" className="collapsible-content">
+        <div className="collapsible-content">
           <div className="create-container">
             <form onSubmit={handleCreateCompany}>
               <div className="grid-layout">
                 <div>
-                  <label className="label">Name</label>
+                  <label className="label">Name *</label>
                   <input
                     className="input-field"
                     value={companyName}
@@ -231,7 +211,7 @@ export default function SuperAdmin() {
                     className="input-field"
                     value={logoUrl}
                     onChange={(e) => setLogoUrl(e.target.value)}
-                    placeholder="Company Logo URL"
+                    placeholder="https://..."
                   />
                 </div>
                 <div>
@@ -252,7 +232,7 @@ export default function SuperAdmin() {
         </div>
       </section>
 
-      {/* Admins Section */}
+      {/* ── Existing Admins ── */}
       <section className="existing-container">
         <span>Existing Admins</span>
         <div className="table-container">
@@ -260,30 +240,32 @@ export default function SuperAdmin() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Company</th>
                 <th>Email</th>
+                <th>Company</th>
+                <th>Slug</th>
               </tr>
             </thead>
             <tbody>
               {currentAdmins.map((admin) => (
                 <tr key={admin.user_id}>
                   <td>{admin.admin_name}</td>
-                  <td>{admin.company_name}</td>
                   <td>{admin.email}</td>
+                  <td>{admin.company_name}</td>
+                  <td><code>{admin.company_slug || '—'}</code></td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div className="pagination">
             <button
-              onClick={() => paginateAdmins(currentAdminPage - 1)}
+              onClick={() => setCurrentAdminPage((p) => p - 1)}
               disabled={currentAdminPage === 1}
             >
               Previous
             </button>
             <button
-              onClick={() => paginateAdmins(currentAdminPage + 1)}
-              disabled={currentAdminPage === Math.ceil(admins.length / adminsPerPage)}
+              onClick={() => setCurrentAdminPage((p) => p + 1)}
+              disabled={currentAdminPage >= Math.ceil(admins.length / adminsPerPage)}
             >
               Next
             </button>
@@ -291,70 +273,71 @@ export default function SuperAdmin() {
         </div>
       </section>
 
-      {/* Create Admin Section */}
-      <section
-        id="createAdmin"
-        className={`create-collapsible ${isCreateAdminOpen ? 'is-open' : ''}`}
-      >
+      {/* ── Create Admin ── */}
+      <section className={`create-collapsible ${isCreateAdminOpen ? 'is-open' : ''}`}>
         <button
           type="button"
           className="collapsible-trigger"
-          onClick={toggleCreateAdmin}
+          onClick={() => setIsCreateAdminOpen((v) => !v)}
           aria-expanded={isCreateAdminOpen}
-          aria-controls="createAdminOpen"
         >
           <span>Create a New Admin</span>
-          <svg
-            className={`chevron ${isCreateAdminOpen ? 'chevron-rotate' : ''}`}
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 9l6 6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <Chevron open={isCreateAdminOpen} />
         </button>
-        <div id="createAdminOpen" className="collapsible-content">
+        <div className="collapsible-content">
           <div className="create-container">
             <form onSubmit={handleCreateAdmin}>
               <div className="grid-layout">
-                <label className="label">Name</label>
-                <input
-                  className="input-field"
-                  value={adminName}
-                  onChange={(e) => setAdminName(e.target.value)}
-                  required
-                  placeholder="Admin Name"
-                />
+                <div>
+                  <label className="label">Name *</label>
+                  <input
+                    className="input-field"
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    required
+                    placeholder="Admin Name"
+                  />
+                </div>
+                <div>
+                  <label className="label">Email *</label>
+                  <input
+                    className="input-field"
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    required
+                    placeholder="admin@company.com"
+                  />
+                </div>
               </div>
               <div className="grid-layout">
-                <label className="label">Email</label>
-                <input
-                  className="input-field"
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  required
-                  placeholder="Admin Email"
-                />
-              </div>
-              <div className="grid-layout">
-                <label className="label">Password</label>
-                <input
-                  className="input-field"
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  required
-                  placeholder="Admin Password"
-                />
+                <div>
+                  <label className="label">Password *</label>
+                  <input
+                    className="input-field"
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    required
+                    placeholder="Temporary Password"
+                  />
+                </div>
+                <div>
+                  <label className="label">Company *</label>
+                  <select
+                    className="input-field"
+                    value={adminCompanyId}
+                    onChange={(e) => setAdminCompanyId(e.target.value)}
+                    required
+                  >
+                    <option value="">Select a company</option>
+                    {companies.map((company) => (
+                      <option key={company.company_id} value={company.company_id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <button type="submit" className="submit-btn">
                 Create Admin
@@ -364,70 +347,12 @@ export default function SuperAdmin() {
         </div>
       </section>
 
-      {/* Assign Admin to Company */}
-      <section
-        id="assignAdmin"
-        className={`create-collapsible ${isAssignAdminOpen ? 'is-open' : ''}`}
-      >
-        <button
-          type="button"
-          className="collapsible-trigger"
-          onClick={toggleAssignAdmin}
-          aria-expanded={isAssignAdminOpen}
-          aria-controls="AssignAdminOpen"
-        >
-          <span>Assign Admin To Company</span>
-          <svg
-            className={`chevron ${isAssignAdminOpen ? 'chevron-rotate' : ''}`}
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 9l6 6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-        <div id="AssignAdminOpen" className="collapsible-content">
-          <div className="create-container">
-            <form onSubmit={handleAssignAdminToCompany}>
-                <label className="label">Admin Email</label>
-                <input
-                    className="input-field"
-                    type="email"
-                    value={assignAdminEmail}
-                    onChange={(e) => setAssignAdminEmail(e.target.value)}
-                    required
-                />
-                <label className="label">Select Company</label>
-                <select
-                    className="input-field"
-                    onChange={(e) => setCompanyId(e.target.value)}
-                    required
-                >
-                    <option value="">Select a company</option>
-                    {companies.map((company) => (
-                    <option key={company.company_id} value={company.company_id}>
-                        {company.name}
-                    </option>
-                    ))}
-                </select>
-                <button type="submit" className="submit-btn">
-                    Assign Admin
-                </button>
-            </form>
-          </div>
+      {/* ── Message ── */}
+      {message && (
+        <div className={`message ${messageType === 'error' ? 'message-error' : 'message-success'}`}>
+          {message}
         </div>
-      </section>
-
-      {/* Display Success/Failure Messages */}
-      {message && <div className="message">{message}</div>}
+      )}
     </div>
   );
 }

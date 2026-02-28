@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import '../components/SignIn.css'; // ← add this
+import '../components/SignIn.css';
 
 export default function SignIn() {
   const nav = useNavigate();
@@ -20,8 +20,18 @@ export default function SignIn() {
     try {
       const res = await api.post('/auth/login', { email, password });
       login(res.data);
-      if (res.data.user.role === 'admin') nav('/admin/dashboard');
-      else nav('/dashboard');
+
+      const { role, company_slug } = res.data.user;
+
+      // Safety check — if no slug something is wrong with the account setup
+      if (!company_slug) {
+        setErr('Your account is not associated with a company. Please contact your administrator.');
+        return;
+      }
+
+      if (role === 'admin') nav(`/${company_slug}/admin/dashboard`);
+      else nav(`/${company_slug}/dashboard`);
+
     } catch (e) {
       setErr(e.response?.data?.message || 'Invalid credentials');
     } finally {

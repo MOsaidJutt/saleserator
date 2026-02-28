@@ -3,6 +3,7 @@ import api from '../../api';
 import s3PlainAxios from '../../s3PlainAxios';
 import { Link } from 'react-router-dom';
 import Nav from '../../components/Navbar';
+import { useAuth } from '../../context/AuthContext';
 import '../../components/adminuistyles/CourseForm.css';
 
 /** Helper: format seconds as h/m/s, e.g. 1h 12m / 3m 40s / 42s */
@@ -52,6 +53,8 @@ function getVideoDurationFromFile(file) {
 }
 
 export default function AdminCourseUpload() {
+  const { user } = useAuth();
+  const slug = user?.company_slug;
   const [courses, setCourses] = useState([]);
   const [editingCourse, setEditingCourse] = useState(null);
   const [title, setTitle] = useState('');
@@ -429,7 +432,7 @@ export default function AdminCourseUpload() {
                   </div>
                   <div className="course-card-actions">
                     <Link
-                      to={`/admin/courses/${course.id}/edit`}
+                      to={`/${slug}/admin/courses/${course.id}/edit`}
                       className="course-item-btn"
                     >
                       Edit

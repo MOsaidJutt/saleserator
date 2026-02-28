@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 
-const { validate, loginSchema, signupSchema } = require('../utils/validators');
+const { validate, loginSchema } = require('../utils/validators');
 
 const router = express.Router();
 
@@ -19,6 +19,7 @@ const issue = (user) => {
     role: user.role,
     company_id: user.company_id ?? null,
     name: user.name ?? null,
+    company_slug: user.company_slug ?? null,
   };
 
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXP });
@@ -45,39 +46,13 @@ router.post('/check-email', async (req, res, next) => {
   }
 });
 
-router.post(
-  '/signup',
-  validate(signupSchema),
-  async (req, res, next) => {
-    try {
-      const { email, password, name } = req.body;
-
-      // block duplicates
-      const exists = await pool.query(
-        'SELECT 1 FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1',
-        [email]
-      );
-
-      if (exists.rows.length) {
-        return res.status(409).json({ message: 'Email already registered' });
-      }
-
-      const password_hash = await bcrypt.hash(password, 10);
-      const cleanName = (name || '').trim().slice(0, 120) || null;
-
-      const insert = await pool.query(
-        `INSERT INTO users (email, password_hash, role, company_id, name)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING user_id, email, role, company_id, name`,
-        [email, password_hash, 'sales_rep', null, cleanName]
-      );
-
-      return res.status(201).json(issue(insert.rows[0]));
-    } catch (err) {
-      next(err);
-    }
-  }
-);
+// /signup is disabled for V1 — invite-only architecture.
+// Users are created by admins via POST /admin/users/invite
+router.post('/signup', (_req, res) => {
+  return res.status(403).json({
+    message: 'Open registration is disabled. Please contact your administrator.',
+  });
+});
 
 router.post(
   '/login',
@@ -86,16 +61,14 @@ router.post(
     try {
       const { email, password } = req.body;
 
-      console.log('Incoming email:', email);
-
       const { rows } = await pool.query(
-        `SELECT user_id, email, role, company_id, name, password_hash
-           FROM users
-          WHERE LOWER(TRIM(email)) = LOWER(TRIM($1))`,
+        `SELECT u.user_id, u.email, u.role, u.company_id, u.name, u.password_hash,
+                c.slug AS company_slug
+         FROM users u
+         LEFT JOIN companies c ON u.company_id = c.company_id
+         WHERE LOWER(TRIM(u.email)) = LOWER(TRIM($1))`,
         [email]
       );
-
-      console.log('Rows found:', rows.length);
 
       if (!rows.length) {
         return res.status(401).json({ message: 'Invalid credentials' });
@@ -103,14 +76,7 @@ router.post(
 
       const user = rows[0];
 
-      console.log('Stored hash:', user.password_hash);
-
-      const ok = await bcrypt.compare(
-        password,
-        user.password_hash || ''
-      );
-
-      console.log('Password match result:', ok);
+      const ok = await bcrypt.compare(password, user.password_hash || '');
 
       if (!ok) {
         return res.status(401).json({ message: 'Invalid credentials' });

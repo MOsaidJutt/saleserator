@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import api, { apiCsv } from '../../api';
 import { Link } from 'react-router-dom';
-import '../../components/adminuistyles/AdminLeaderboard.css'; // Custom CSS file
+import { useAuth } from '../../context/AuthContext';
+import '../../components/adminuistyles/AdminLeaderboard.css';
 import Navbar from '../../components/Navbar';
 
 export default function Leaderboard() {
+  const { user } = useAuth();
+  const slug = user?.company_slug;
   const today = new Date().toISOString().slice(0, 10);
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
@@ -168,7 +171,7 @@ export default function Leaderboard() {
                       <td>{u.activity_count}</td>
                       <td>
                         <Link
-                          to={`/admin/leaderboard/user/${u.user_id}?start=${start}&end=${end}`}
+                          to={`/${slug}/admin/leaderboard/user/${u.user_id}?start=${start}&end=${end}`}
                           className="link"
                         >
                           View

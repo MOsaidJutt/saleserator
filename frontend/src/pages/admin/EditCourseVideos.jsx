@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../api';
 import axios from 'axios';
 import Nav from '../../components/Navbar';
+import { useAuth } from '../../context/AuthContext';
 import '../../components/adminuistyles/EditCourseVideos.css';
 
 function fmt(sec = 0) {
@@ -48,6 +49,8 @@ function getVideoDurationFromFile(file) {
 }
 
 export default function EditCourseVideos() {
+  const { user } = useAuth();
+  const slug = user?.company_slug;
   const { id } = useParams(); // /admin/courses/:id/edit
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState(null);
@@ -305,7 +308,7 @@ export default function EditCourseVideos() {
         {/* Header */}
         <div className="edit-course-header">
           <h1>Edit Course: {course.title}</h1>
-          <Link to="/admin/CourseUpload" className="back-link">
+          <Link to={`/${slug}/admin/courses/upload`} className="back-link">
             Back to Courses
           </Link>
         </div>

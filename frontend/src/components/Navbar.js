@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -9,12 +10,13 @@ import './navbar.css';
 
 function Nav() {
   const { user, logout } = useAuth();
-  const { brand } = useBrand(); // { name, logo }
+  const { brand } = useBrand();
   const [showSidebar, setShowSidebar] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const navigate = useNavigate();
 
   const BASE_NAVBAR_HEIGHT = 80;
+  const slug = user?.company_slug;
 
   useEffect(() => {
     if (showSidebar) document.body.classList.add('no-scroll');
@@ -62,10 +64,10 @@ function Nav() {
 
           {/* RIGHT: actions */}
           <div className="nav-actions">
-            {user && user.role === 'admin' && (
+            {user?.role === 'admin' && (
               <button
                 className="nav-btn nav-btn-outline"
-                onClick={() => navigate('/admin/dashboard')}
+                onClick={() => navigate(`/${slug}/admin/dashboard`)}
                 aria-label="Admin Dashboard"
                 title="Admin Dashboard"
                 type="button"
@@ -73,10 +75,10 @@ function Nav() {
                 <AiFillHome />
               </button>
             )}
-            {user && user.role === 'admin' && (
+            {user?.role === 'admin' && (
               <button
                 className="nav-btn nav-btn-solid"
-                onClick={() => navigate('/admin/brand-settings')}
+                onClick={() => navigate(`/${slug}/admin/brand-settings`)}
                 type="button"
               >
                 Brand Settings
@@ -85,7 +87,7 @@ function Nav() {
             {user && user.role !== 'admin' && (
               <button
                 className="nav-btn nav-btn-outline"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(`/${slug}/dashboard`)}
                 aria-label="Dashboard"
                 title="Dashboard"
                 type="button"
@@ -132,7 +134,7 @@ function Nav() {
         style={{ top: BASE_NAVBAR_HEIGHT }}
       />
 
-      {/* Spacer so content doesn’t hide under fixed navbar */}
+      {/* Spacer so content doesn't hide under fixed navbar */}
       <div style={{ height: BASE_NAVBAR_HEIGHT }} />
     </div>
   );

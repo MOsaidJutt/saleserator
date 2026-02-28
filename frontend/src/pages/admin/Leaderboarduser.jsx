@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import api from '../../api';
-import '../../components/adminuistyles/AdminLeaderboarduser.css'; // Custom CSS file
+import { useAuth } from '../../context/AuthContext';
+import '../../components/adminuistyles/AdminLeaderboarduser.css';
 import Navbar from '../../components/Navbar';
 
 function useQuery() {
@@ -10,6 +11,8 @@ function useQuery() {
 }
 
 export default function LeaderboardUser() {
+  const { user: authUser } = useAuth();
+  const slug = authUser?.company_slug;
   const { userId } = useParams();
   const query = useQuery();
   const today = new Date().toISOString().slice(0, 10);
@@ -55,7 +58,7 @@ export default function LeaderboardUser() {
               </span>
             )}
           </h1>
-          <Link to="/admin/leaderboard" className="link">
+          <Link to={`/${slug}/admin/leaderboard`} className="link">
             ← Back to Leaderboard
           </Link>
 

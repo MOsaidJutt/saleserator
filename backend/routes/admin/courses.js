@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../../db'); // Ensure you have a db connection pool
-const { auth, requireRole } = require('../../middleware/auth'); // Authentication and Authorization middleware
+const pool = require('../../db');
+const { auth, requireRole } = require('../../middleware/auth');
 const {
   S3Client,
   PutObjectCommand,
@@ -19,7 +19,6 @@ const PUBLIC_BASE =
   process.env.S3_PUBLIC_BASE ||
   `https://${S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/`;
 
-// helper to create a UUID-ish filename
 function randomName(ext = '') {
   const id = crypto.randomUUID
     ? crypto.randomUUID()
@@ -27,7 +26,6 @@ function randomName(ext = '') {
   return ext ? `${id}.${ext.replace(/^\./, '')}` : id;
 }
 
-// --- helper to pre-sign GETs for private bucket
 function guessMimeFromKey(key) {
   const ext = (key.split('.').pop() || '').toLowerCase();
   if (ext === 'mp4') return 'video/mp4';
@@ -35,7 +33,7 @@ function guessMimeFromKey(key) {
   if (ext === 'mov') return 'video/quicktime';
   if (ext === 'm3u8') return 'application/vnd.apple.mpegurl';
   if (ext === 'mp3') return 'audio/mpeg';
-  return undefined; // let S3 decide
+  return undefined;
 }
 
 async function signGetUrl({ key, fileName, expiresIn = PRESIGN_TTL }) {
@@ -53,6 +51,7 @@ async function signGetUrl({ key, fileName, expiresIn = PRESIGN_TTL }) {
 
   return getSignedUrl(s3, cmd, { expiresIn });
 }
+
 // ==================== COURSES & ASSETS (ADMIN) ====================
 
 // Admin: create course
@@ -70,21 +69,13 @@ router.post('/courses', auth, requireRole('admin'), async (req, res) => {
 
   if (!title) return res.status(400).json({ message: 'Title required!' });
 
-  // TODO: add company_id here later
+  const company_id = req.user.company_id;
+
   const { rows } = await pool.query(
-    `INSERT INTO courses (title, category, points, is_active, storage_provider, media_type, description, hidden)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-     RETURNING id, title, category, points, is_active, storage_provider, media_type, description, hidden`,
-    [
-      title,
-      category,
-      points,
-      is_active,
-      storage_provider,
-      media_type,
-      description,
-      hidden,
-    ],
+    `INSERT INTO courses (title, category, points, is_active, storage_provider, media_type, description, hidden, company_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+     RETURNING id, title, category, points, is_active, storage_provider, media_type, description, hidden, company_id`,
+    [title, category, points, is_active, storage_provider, media_type, description, hidden, company_id],
   );
 
   res.status(201).json(rows[0]);
@@ -93,6 +84,7 @@ router.post('/courses', auth, requireRole('admin'), async (req, res) => {
 // Delete course (admin only)
 router.delete('/courses/:id', auth, requireRole('admin'), async (req, res) => {
   const { id } = req.params;
+  const company_id = req.user.company_id;
 
   if (!id) {
     return res.status(400).json({ message: 'Course ID is required' });
@@ -100,21 +92,26 @@ router.delete('/courses/:id', auth, requireRole('admin'), async (req, res) => {
 
   const client = await pool.connect();
   try {
-    // 1) Collect S3 keys
+    // 1) Collect S3 keys — only for this company's course
     const assetResult = await client.query(
-      `SELECT DISTINCT s3_key FROM course_assets WHERE course_id = $1 AND s3_key IS NOT NULL`,
-      [id],
+      `SELECT DISTINCT ca.s3_key 
+       FROM course_assets ca
+       JOIN courses c ON c.id = ca.course_id
+       WHERE ca.course_id = $1 
+         AND c.company_id = $2
+         AND ca.s3_key IS NOT NULL`,
+      [id, company_id],
     );
     const keys = (assetResult.rows || [])
       .map((r) => r.s3_key)
       .filter((k) => k && k.trim() !== '');
 
-    // 2) Transaction: delete the course
+    // 2) Transaction: delete the course (only if it belongs to this company)
     await client.query('BEGIN');
 
     const deleteCourseResult = await client.query(
-      'DELETE FROM courses WHERE id = $1 RETURNING id',
-      [id],
+      'DELETE FROM courses WHERE id = $1 AND company_id = $2 RETURNING id',
+      [id, company_id],
     );
 
     if (deleteCourseResult.rows.length === 0) {
@@ -124,7 +121,7 @@ router.delete('/courses/:id', auth, requireRole('admin'), async (req, res) => {
 
     await client.query('COMMIT');
 
-    // 3) delete S3 objects
+    // 3) Delete S3 objects
     let s3Deleted = 0;
     let s3Errors = [];
     if (keys.length > 0) {
@@ -136,9 +133,7 @@ router.delete('/courses/:id', auth, requireRole('admin'), async (req, res) => {
             Quiet: false,
           },
         };
-        const deleteResponse = await s3.send(
-          new DeleteObjectsCommand(deleteParams),
-        );
+        const deleteResponse = await s3.send(new DeleteObjectsCommand(deleteParams));
         s3Deleted = (deleteResponse.Deleted || []).length;
         if (deleteResponse.Errors && deleteResponse.Errors.length > 0) {
           s3Errors = deleteResponse.Errors;
@@ -160,9 +155,7 @@ router.delete('/courses/:id', auth, requireRole('admin'), async (req, res) => {
       await client.query('ROLLBACK');
     } catch (_) {}
     console.error('Error deleting course and assets:', err);
-    return res
-      .status(500)
-      .json({ message: 'Failed to delete course', error: err.message });
+    return res.status(500).json({ message: 'Failed to delete course', error: err.message });
   } finally {
     client.release();
   }
@@ -171,20 +164,12 @@ router.delete('/courses/:id', auth, requireRole('admin'), async (req, res) => {
 // Update a course (partial)
 router.patch('/courses/:id', auth, requireRole('admin'), async (req, res) => {
   const { id } = req.params;
+  const company_id = req.user.company_id;
 
   const fields = [
-    'title',
-    'category',
-    'points',
-    'is_active',
-    'storage_provider',
-    'media_type',
-    'asset_url',
-    'thumbnail_url',
-    'duration_seconds',
-    'description',
-    's3_prefix',
-    'hidden',
+    'title', 'category', 'points', 'is_active', 'storage_provider',
+    'media_type', 'asset_url', 'thumbnail_url', 'duration_seconds',
+    'description', 's3_prefix', 'hidden',
   ];
   const sets = [];
   const vals = [];
@@ -197,9 +182,13 @@ router.patch('/courses/:id', auth, requireRole('admin'), async (req, res) => {
   if (!sets.length)
     return res.status(400).json({ message: 'No fields to update' });
 
+  // company_id check in WHERE ensures admin can't edit another company's course
   vals.push(id);
+  vals.push(company_id);
   const { rows } = await pool.query(
-    `UPDATE courses SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING *`,
+    `UPDATE courses SET ${sets.join(', ')} 
+     WHERE id = $${vals.length - 1} AND company_id = $${vals.length}
+     RETURNING *`,
     vals,
   );
   if (!rows.length)
@@ -208,205 +197,167 @@ router.patch('/courses/:id', auth, requireRole('admin'), async (req, res) => {
 });
 
 // Admin: get presigned URL to upload a course asset to S3
-router.post(
-  '/uploads/presign',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    try {
-      const {
-        course_id,
-        contentType,
-        fileExt = 'mp4',
-        folder = 'courses',
-      } = req.body || {};
-      if (!course_id || !contentType) {
-        return res
-          .status(400)
-          .json({ message: 'course_id and contentType required' });
-      }
+router.post('/uploads/presign', auth, requireRole('admin'), async (req, res) => {
+  try {
+    const { course_id, contentType, fileExt = 'mp4' } = req.body || {};
+    const company_id = req.user.company_id;
+    const company_slug = req.user.company_slug;
 
-      // ensure course exists
-      const { rows: courseRows } = await pool.query(
-        'SELECT id FROM courses WHERE id = $1',
-        [course_id],
-      );
-      if (!courseRows.length)
-        return res.status(404).json({ message: 'Course not found' });
-
-      const fileName = randomName(fileExt);
-      const s3Key = `${folder}/${course_id}/${fileName}`;
-
-      const cmd = new PutObjectCommand({
-        Bucket: S3_BUCKET,
-        Key: s3Key,
-        ContentType: contentType,
-      });
-
-      const uploadUrl = await getSignedUrl(s3, cmd, { expiresIn: PRESIGN_TTL });
-      return res.json({ uploadUrl, s3Key, expiresIn: PRESIGN_TTL });
-    } catch (err) {
-      console.error('[presign] error:', err);
-      return res.status(500).json({ message: 'Failed to presign upload' });
+    if (!course_id || !contentType) {
+      return res.status(400).json({ message: 'course_id and contentType required' });
     }
-  },
-);
+
+    // Ensure course belongs to this company
+    const { rows: courseRows } = await pool.query(
+      'SELECT id FROM courses WHERE id = $1 AND company_id = $2',
+      [course_id, company_id],
+    );
+    if (!courseRows.length)
+      return res.status(404).json({ message: 'Course not found' });
+
+    const fileName = randomName(fileExt);
+    // S3 path now includes company slug for isolation
+    const s3Key = `courses/${company_slug}/${course_id}/${fileName}`;
+
+    const cmd = new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: s3Key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(s3, cmd, { expiresIn: PRESIGN_TTL });
+    return res.json({ uploadUrl, s3Key, expiresIn: PRESIGN_TTL });
+  } catch (err) {
+    console.error('[presign] error:', err);
+    return res.status(500).json({ message: 'Failed to presign upload' });
+  }
+});
 
 // Admin: record an uploaded asset in DB
-router.post(
-  '/courses/:id/assets',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    try {
-      const courseId = Number(req.params.id);
-      const {
-        s3_key,
-        kind = 'video',
-        mime_type = null,
-        size_bytes = null,
-        duration_seconds = null,
-        quality_label = null,
-        is_default = false,
-        file_name = null,
-        public_url = null,
-      } = req.body || {};
+router.post('/courses/:id/assets', auth, requireRole('admin'), async (req, res) => {
+  try {
+    const courseId = Number(req.params.id);
+    const company_id = req.user.company_id;
+    const {
+      s3_key, kind = 'video', mime_type = null, size_bytes = null,
+      duration_seconds = null, quality_label = null, is_default = false,
+      file_name = null, public_url = null,
+    } = req.body || {};
 
-      if (!courseId || !s3_key) {
-        return res
-          .status(400)
-          .json({ message: 'course id and s3_key required' });
-      }
+    if (!courseId || !s3_key) {
+      return res.status(400).json({ message: 'course id and s3_key required' });
+    }
 
-      // validate course
-      const { rows: courseRows } = await pool.query(
-        'SELECT id FROM courses WHERE id = $1',
+    // Validate course belongs to this company
+    const { rows: courseRows } = await pool.query(
+      'SELECT id FROM courses WHERE id = $1 AND company_id = $2',
+      [courseId, company_id],
+    );
+    if (!courseRows.length)
+      return res.status(404).json({ message: 'Course not found' });
+
+    if (is_default) {
+      await pool.query(
+        'UPDATE course_assets SET is_default = FALSE WHERE course_id = $1 AND is_default = TRUE',
         [courseId],
       );
-      if (!courseRows.length)
-        return res.status(404).json({ message: 'Course not found' });
+    }
 
-      // if marking default, unset previous default for this course
-      if (is_default) {
-        await pool.query(
-          'UPDATE course_assets SET is_default = FALSE WHERE course_id = $1 AND is_default = TRUE',
-          [courseId],
-        );
-      }
-
-      const insertSql = `
+    const insertSql = `
       INSERT INTO course_assets
         (course_id, kind, s3_key, mime_type, size_bytes, duration_seconds, quality_label, is_default, file_name, public_url)
-      VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
       RETURNING id, course_id, kind, s3_key, mime_type, size_bytes, duration_seconds, quality_label, is_default, created_at, file_name, public_url`;
-      const vals = [
-        courseId,
-        kind,
-        s3_key,
-        mime_type,
-        size_bytes,
-        duration_seconds,
-        quality_label,
-        is_default,
-        file_name,
-        public_url,
-      ];
-      const { rows } = await pool.query(insertSql, vals);
+    const vals = [courseId, kind, s3_key, mime_type, size_bytes, duration_seconds, quality_label, is_default, file_name, public_url];
+    const { rows } = await pool.query(insertSql, vals);
 
-      return res.status(201).json(rows[0]);
-    } catch (err) {
-      console.error('[add asset] error:', err);
-      return res.status(500).json({ message: 'Failed to save course asset' });
-    }
-  },
-);
+    return res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('[add asset] error:', err);
+    return res.status(500).json({ message: 'Failed to save course asset' });
+  }
+});
 
-// GET /admin/courses  -> list courses for admin
+// GET /admin/courses -> list courses for this company only
 router.get('/courses', auth, requireRole('admin'), async (req, res) => {
-  // TODO: WHERE company_id = ... later
+  const company_id = req.user.company_id;
+
   const sql = `
     SELECT
       c.id, c.title, c.category, c.points, c.is_active, c.media_type, c.storage_provider,
-      c.thumbnail_url, c.duration_seconds,
-      c.hidden,
+      c.thumbnail_url, c.duration_seconds, c.hidden,
       COALESCE(COUNT(a.id), 0)::int AS asset_count,
       MAX(CASE WHEN a.is_default THEN a.id END)::int AS default_asset_id
     FROM courses c
     LEFT JOIN course_assets a ON a.course_id = c.id
+    WHERE c.company_id = $1
     GROUP BY c.id
     ORDER BY c.id DESC
   `;
-  const { rows } = await pool.query(sql);
+  const { rows } = await pool.query(sql, [company_id]);
   res.json(rows);
 });
 
 // Return a short-lived signed URL (JSON)
-router.get(
-  '/courses/:id/assets/:assetId/url',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    try {
-      const { id, assetId } = req.params;
-      const { rows } = await pool.query(
-        'SELECT file_name, s3_key FROM course_assets WHERE id=$1 AND course_id=$2',
-        [assetId, id],
-      );
-      if (!rows.length)
-        return res.status(404).json({ message: 'Asset not found' });
+router.get('/courses/:id/assets/:assetId/url', auth, requireRole('admin'), async (req, res) => {
+  try {
+    const { id, assetId } = req.params;
+    const company_id = req.user.company_id;
 
-      const { s3_key, file_name } = rows[0];
-      const url = await signGetUrl({
-        key: s3_key,
-        fileName: file_name,
-        expiresIn: PRESIGN_TTL,
-      });
-      res.json({ url, expiresIn: PRESIGN_TTL });
-    } catch (e) {
-      console.error('[admin preview url] error:', e);
-      res.status(500).json({ message: 'Failed to generate URL' });
-    }
-  },
-);
+    const { rows } = await pool.query(
+      `SELECT ca.file_name, ca.s3_key 
+       FROM course_assets ca
+       JOIN courses c ON c.id = ca.course_id
+       WHERE ca.id = $1 AND ca.course_id = $2 AND c.company_id = $3`,
+      [assetId, id, company_id],
+    );
+    if (!rows.length)
+      return res.status(404).json({ message: 'Asset not found' });
 
-// Redirect to a signed URL (best for "Open" buttons)
-router.get(
-  '/courses/:id/assets/:assetId/open',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    try {
-      const { id, assetId } = req.params;
-      const { rows } = await pool.query(
-        'SELECT file_name, s3_key FROM course_assets WHERE id = $1 AND course_id = $2',
-        [assetId, id],
-      );
-      if (!rows.length) return res.status(404).send('Asset not found');
+    const { s3_key, file_name } = rows[0];
+    const url = await signGetUrl({ key: s3_key, fileName: file_name, expiresIn: PRESIGN_TTL });
+    res.json({ url, expiresIn: PRESIGN_TTL });
+  } catch (e) {
+    console.error('[admin preview url] error:', e);
+    res.status(500).json({ message: 'Failed to generate URL' });
+  }
+});
 
-      const { s3_key, file_name } = rows[0];
-      const url = await signGetUrl({
-        key: s3_key,
-        fileName: file_name,
-        expiresIn: PRESIGN_TTL,
-      });
-      return res.redirect(302, url);
-    } catch (e) {
-      console.error('[admin open redirect] error:', e);
-      return res.status(500).send('Failed to open asset');
-    }
-  },
-);
+// Redirect to a signed URL
+router.get('/courses/:id/assets/:assetId/open', auth, requireRole('admin'), async (req, res) => {
+  try {
+    const { id, assetId } = req.params;
+    const company_id = req.user.company_id;
+
+    const { rows } = await pool.query(
+      `SELECT ca.file_name, ca.s3_key 
+       FROM course_assets ca
+       JOIN courses c ON c.id = ca.course_id
+       WHERE ca.id = $1 AND ca.course_id = $2 AND c.company_id = $3`,
+      [assetId, id, company_id],
+    );
+    if (!rows.length) return res.status(404).send('Asset not found');
+
+    const { s3_key, file_name } = rows[0];
+    const url = await signGetUrl({ key: s3_key, fileName: file_name, expiresIn: PRESIGN_TTL });
+    return res.redirect(302, url);
+  } catch (e) {
+    console.error('[admin open redirect] error:', e);
+    return res.status(500).send('Failed to open asset');
+  }
+});
 
 // Get course details (optionally with signed URLs if ?signed=1)
 router.get('/courses/:id', auth, requireRole('admin'), async (req, res) => {
   const { id } = req.params;
+  const company_id = req.user.company_id;
   const includeSigned = String(req.query.signed || '') === '1';
+
   try {
     const { rows: courseRows } = await pool.query(
       `SELECT id, title, category, description, s3_prefix, points 
-       FROM courses WHERE id = $1`,
-      [id],
+       FROM courses WHERE id = $1 AND company_id = $2`,
+      [id, company_id],
     );
     if (!courseRows.length)
       return res.status(404).json({ error: 'Course not found' });
@@ -423,11 +374,7 @@ router.get('/courses/:id', auth, requireRole('admin'), async (req, res) => {
       const signed = await Promise.all(
         videoRows.map(async (v) => {
           const signed_url = v.s3_key
-            ? await signGetUrl({
-                key: v.s3_key,
-                fileName: v.file_name,
-                expiresIn: PRESIGN_TTL,
-              })
+            ? await signGetUrl({ key: v.s3_key, fileName: v.file_name, expiresIn: PRESIGN_TTL })
             : null;
           return { ...v, signed_url, signed_expires_in: PRESIGN_TTL };
         }),
@@ -442,62 +389,67 @@ router.get('/courses/:id', auth, requireRole('admin'), async (req, res) => {
   }
 });
 
-// Presign multiple uploads for a course; returns keys + PUT URLs
-router.post(
-  '/courses/:id/presign',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    const { id } = req.params;
-    const { files } = req.body; // files: [{fileName, contentType}]
-    if (!Array.isArray(files) || files.length === 0) {
-      return res.status(400).json({ error: 'files[] required' });
+// Presign multiple uploads for a course
+router.post('/courses/:id/presign', auth, requireRole('admin'), async (req, res) => {
+  const { id } = req.params;
+  const company_id = req.user.company_id;
+  const company_slug = req.user.company_slug;
+  const { files } = req.body;
+
+  if (!Array.isArray(files) || files.length === 0) {
+    return res.status(400).json({ error: 'files[] required' });
+  }
+
+  // Verify course belongs to this company
+  const { rows } = await pool.query(
+    `SELECT id, s3_prefix FROM courses WHERE id = $1 AND company_id = $2`,
+    [id, company_id],
+  );
+  if (!rows.length)
+    return res.status(404).json({ error: 'Course not found' });
+
+  // Use company slug in S3 prefix for isolation
+  const s3Prefix = `courses/${company_slug}/${id}/`;
+
+  try {
+    const results = [];
+    for (const f of files) {
+      const ext = (f.fileName.match(/\.[^.]+$/) || [''])[0] || '';
+      const key = `${s3Prefix}${randomName(ext)}`;
+
+      const cmd = new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: key,
+        ContentType: f.contentType,
+      });
+
+      const uploadUrl = await getSignedUrl(s3, cmd, { expiresIn: 900 });
+      results.push({ fileName: f.fileName, contentType: f.contentType, key, uploadUrl });
     }
-
-    // Get s3_prefix from DB so everything stays in one folder:
-    const { rows } = await pool.query(
-      `SELECT s3_prefix FROM courses WHERE id=$1`,
-      [id],
-    );
-    if (!rows.length)
-      return res.status(404).json({ error: 'Course not found' });
-    const s3Prefix = rows[0].s3_prefix || `courses/${id}/`;
-
-    try {
-      const results = [];
-      for (const f of files) {
-        const ext = (f.fileName.match(/\.[^.]+$/) || [''])[0] || '';
-        const key = `${s3Prefix}${randomName(ext)}`;
-
-        const cmd = new PutObjectCommand({
-          Bucket: S3_BUCKET,
-          Key: key,
-          ContentType: f.contentType,
-        });
-
-        const uploadUrl = await getSignedUrl(s3, cmd, { expiresIn: 900 }); // 15 min
-        results.push({
-          fileName: f.fileName,
-          contentType: f.contentType,
-          key,
-          uploadUrl,
-        });
-      }
-      res.json({ items: results, s3Prefix });
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: 'Failed to presign' });
-    }
-  },
-);
+    res.json({ items: results, s3Prefix });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to presign' });
+  }
+});
 
 // Persist uploaded video rows (batch)
 router.post('/courses/:id/', auth, requireRole('admin'), async (req, res) => {
   const { id } = req.params;
+  const company_id = req.user.company_id;
   const { items } = req.body;
+
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'items[] required' });
   }
+
+  // Verify course belongs to this company
+  const { rows: courseCheck } = await pool.query(
+    'SELECT id FROM courses WHERE id = $1 AND company_id = $2',
+    [id, company_id],
+  );
+  if (!courseCheck.length)
+    return res.status(404).json({ error: 'Course not found' });
 
   try {
     const inserted = [];
@@ -508,15 +460,7 @@ router.post('/courses/:id/', auth, requireRole('admin'), async (req, res) => {
            (course_id, file_name, s3_key, public_url, mime_type, size_bytes, duration_seconds)
          VALUES ($1,$2,$3,$4,$5,$6,$7)
          RETURNING id, course_id, file_name, s3_key, public_url, mime_type, size_bytes, duration_seconds, created_at`,
-        [
-          id,
-          it.fileName,
-          it.key,
-          publicUrl,
-          it.contentType || null,
-          it.byteSize || null,
-          it.durationSeconds || null,
-        ],
+        [id, it.fileName, it.key, publicUrl, it.contentType || null, it.byteSize || null, it.durationSeconds || null],
       );
       inserted.push(rows[0]);
     }
@@ -527,91 +471,76 @@ router.post('/courses/:id/', auth, requireRole('admin'), async (req, res) => {
   }
 });
 
-// DELETE one asset (video) from a course
-router.delete(
-  '/courses/:id/assets/:assetId',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    const { id, assetId } = req.params;
+// DELETE one asset from a course
+router.delete('/courses/:id/assets/:assetId', auth, requireRole('admin'), async (req, res) => {
+  const { id, assetId } = req.params;
+  const company_id = req.user.company_id;
 
-    try {
-      const { rows } = await pool.query(
-        `SELECT id, course_id, s3_key FROM course_assets WHERE id = $1 AND course_id = $2`,
-        [assetId, id],
-      );
-      if (!rows.length)
-        return res.status(404).json({ message: 'Asset not found' });
+  try {
+    const { rows } = await pool.query(
+      `SELECT ca.id, ca.s3_key 
+       FROM course_assets ca
+       JOIN courses c ON c.id = ca.course_id
+       WHERE ca.id = $1 AND ca.course_id = $2 AND c.company_id = $3`,
+      [assetId, id, company_id],
+    );
+    if (!rows.length)
+      return res.status(404).json({ message: 'Asset not found' });
 
-      const { s3_key } = rows[0];
+    const { s3_key } = rows[0];
 
-      if (s3_key) {
-        try {
-          const cmd = new DeleteObjectCommand({
-            Bucket: S3_BUCKET,
-            Key: s3_key,
-          });
-          await s3.send(cmd);
-        } catch (s3Err) {
-          console.error('S3 delete error:', s3Err);
-        }
+    if (s3_key) {
+      try {
+        await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: s3_key }));
+      } catch (s3Err) {
+        console.error('S3 delete error:', s3Err);
       }
-
-      await pool.query(
-        `DELETE FROM course_assets WHERE id = $1 AND course_id = $2`,
-        [assetId, id],
-      );
-
-      return res.json({ ok: true });
-    } catch (err) {
-      console.error('Error deleting asset:', err);
-      return res.status(500).json({ message: 'Failed to delete asset' });
     }
-  },
-);
+
+    await pool.query(
+      `DELETE FROM course_assets WHERE id = $1 AND course_id = $2`,
+      [assetId, id],
+    );
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Error deleting asset:', err);
+    return res.status(500).json({ message: 'Failed to delete asset' });
+  }
+});
 
 // Hide a course
-router.patch(
-  '/courses/:id/hide',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const { rowCount } = await pool.query(
-        `UPDATE courses SET hidden = TRUE WHERE id = $1`,
-        [id],
-      );
-      if (!rowCount)
-        return res.status(404).json({ message: 'Course not found' });
-      res.json({ ok: true, message: 'Course hidden (hidden = true).' });
-    } catch (err) {
-      console.error('[hide course] error:', err);
-      res.status(500).json({ message: 'Failed to hide course' });
-    }
-  },
-);
+router.patch('/courses/:id/hide', auth, requireRole('admin'), async (req, res) => {
+  const { id } = req.params;
+  const company_id = req.user.company_id;
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE courses SET hidden = TRUE WHERE id = $1 AND company_id = $2`,
+      [id, company_id],
+    );
+    if (!rowCount) return res.status(404).json({ message: 'Course not found' });
+    res.json({ ok: true, message: 'Course hidden.' });
+  } catch (err) {
+    console.error('[hide course] error:', err);
+    res.status(500).json({ message: 'Failed to hide course' });
+  }
+});
 
 // Unhide a course
-router.patch(
-  '/courses/:id/unhide',
-  auth,
-  requireRole('admin'),
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const { rowCount } = await pool.query(
-        `UPDATE courses SET hidden = FALSE WHERE id = $1`,
-        [id],
-      );
-      if (!rowCount)
-        return res.status(404).json({ message: 'Course not found' });
-      res.json({ ok: true, message: 'Course unhidden (hidden = false).' });
-    } catch (err) {
-      console.error('[unhide course] error:', err);
-      res.status(500).json({ message: 'Failed to unhide course' });
-    }
-  },
-);
+router.patch('/courses/:id/unhide', auth, requireRole('admin'), async (req, res) => {
+  const { id } = req.params;
+  const company_id = req.user.company_id;
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE courses SET hidden = FALSE WHERE id = $1 AND company_id = $2`,
+      [id, company_id],
+    );
+    if (!rowCount) return res.status(404).json({ message: 'Course not found' });
+    res.json({ ok: true, message: 'Course unhidden.' });
+  } catch (err) {
+    console.error('[unhide course] error:', err);
+    res.status(500).json({ message: 'Failed to unhide course' });
+  }
+});
 
 module.exports = router;

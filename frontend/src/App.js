@@ -1,7 +1,7 @@
+// src/App.jsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
-import SignUp from './pages/SignUp';
 import SignIn from './pages/SignIn';
 import ForgotPassword from './pages/ForgotPassword';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -25,139 +25,151 @@ import BrandSettings from './pages/admin/BrandSettings';
 import AdminActivity from './pages/admin/ActivityPage';
 import AdminLeaderboard from './pages/admin/Leaderboard';
 import AdminLeaderboardUser from './pages/admin/Leaderboarduser';
+import AdminUsers from './pages/admin/Users'; // new
 
 export default function App() {
   const { user } = useAuth();
+
   return (
-    <>
-      <div className="container">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
-          <Route path="/superadmin" element={<SuperAdmin />} />
+    <div className="container">
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
 
-          {/* User Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute role="sales_rep">
-                <UserDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/AvailableCourses"
-            element={
-              <ProtectedRoute role="sales_rep">
-                <AvailableCourses />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/courses/detail/:courseId"
-            element={
-              <ProtectedRoute role="sales_rep">
-                <CourseDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/courses/:courseId/video/:assetId"
-            element={
-              <ProtectedRoute role="sales_rep">
-                <VideoWatch />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/activity"
-            element={
-              <ProtectedRoute role="sales_rep">
-                <ActivityPage userId={user?.user_id} />{' '}
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/leaderboard"
-            element={
-              <ProtectedRoute role="sales_rep">
-                <LeaderboardPage />{' '}
-              </ProtectedRoute>
-            }
-          />
+        {/* Signup is disabled — redirect to signin */}
+        <Route path="/signup" element={<Navigate to="/signin" replace />} />
 
-          {/* Admin Routes */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/CourseRequests"
-            element={
-              <ProtectedRoute role="admin">
-                <CourseRequests />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/CourseUpload"
-            element={
-              <ProtectedRoute role="admin">
-                <CourseUpload />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/courses/:id/edit"
-            element={
-              <ProtectedRoute role="admin">
-                <EditCourseVideos />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/activities"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminActivity />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/leaderboard"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminLeaderboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/leaderboard/user/:userId"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminLeaderboardUser />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/brand-settings"
-            element={
-              <ProtectedRoute role="admin">
-                <BrandSettings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/tv" element={<TvMode />}
-          />
-        </Routes>
-      </div>
-    </>
+        {/* Superadmin — TODO: protect this properly later */}
+        <Route path="/superadmin" element={<SuperAdmin />} />
+
+        <Route path="/tv" element={<TvMode />} />
+
+        {/* ── User Routes ── */}
+        <Route
+          path="/:company_slug/dashboard"
+          element={
+            <ProtectedRoute role="sales_rep">
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/courses"
+          element={
+            <ProtectedRoute role="sales_rep">
+              <AvailableCourses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/courses/detail/:courseId"
+          element={
+            <ProtectedRoute role="sales_rep">
+              <CourseDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/courses/:courseId/video/:assetId"
+          element={
+            <ProtectedRoute role="sales_rep">
+              <VideoWatch />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/activity"
+          element={
+            <ProtectedRoute role="sales_rep">
+              <ActivityPage userId={user?.user_id} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/leaderboard"
+          element={
+            <ProtectedRoute role="sales_rep">
+              <LeaderboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ── Admin Routes ── */}
+        <Route
+          path="/:company_slug/admin/dashboard"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/users"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/course-requests"
+          element={
+            <ProtectedRoute role="admin">
+              <CourseRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/courses/upload"
+          element={
+            <ProtectedRoute role="admin">
+              <CourseUpload />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/courses/:id/edit"
+          element={
+            <ProtectedRoute role="admin">
+              <EditCourseVideos />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/activities"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminActivity />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/leaderboard"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminLeaderboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/leaderboard/user/:userId"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminLeaderboardUser />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/:company_slug/admin/brand-settings"
+          element={
+            <ProtectedRoute role="admin">
+              <BrandSettings />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </div>
   );
 }
