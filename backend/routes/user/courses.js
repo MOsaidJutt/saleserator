@@ -1,19 +1,16 @@
-// backend/routes/courses.js
+// backend/routes/user/courses.js
 const express = require('express');
 const pool = require('../../db');
 const { auth } = require('../../middleware/auth');
 const router = express.Router();
 
-// Optional AWS setup (for S3 videos)
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const s3 = new S3Client({ region: process.env.AWS_REGION });
 const S3_BUCKET = process.env.AWS_S3_BUCKET;
 
-// --- Presign TTL (same idea as admin) ---
 const PRESIGN_TTL = Number(process.env.S3_PRESIGN_TTL || 600);
 
-// --- helper to pre-sign GETs for private bucket (mirrors admin logic) ---
 function guessMimeFromKey(key) {
   const ext = (key.split('.').pop() || '').toLowerCase();
   if (ext === 'mp4') return 'video/mp4';
@@ -21,7 +18,7 @@ function guessMimeFromKey(key) {
   if (ext === 'mov') return 'video/quicktime';
   if (ext === 'm3u8') return 'application/vnd.apple.mpegurl';
   if (ext === 'mp3') return 'audio/mpeg';
-  return undefined; // let S3 decide
+  return undefined;
 }
 
 async function signGetUrl({ key, fileName, expiresIn = PRESIGN_TTL }) {
@@ -40,15 +37,10 @@ async function signGetUrl({ key, fileName, expiresIn = PRESIGN_TTL }) {
   return getSignedUrl(s3, cmd, { expiresIn });
 }
 
-// -------------------------------------------
-// Role Middleware
-// -------------------------------------------
 const requireRole = (role) => {
   return (req, res, next) => {
     if (req.user && req.user.role === role) return next();
-    return res
-      .status(403)
-      .json({ message: 'Forbidden: Insufficient permissions' });
+    return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
   };
 };
 
@@ -56,7 +48,7 @@ const requireRole = (role) => {
 // 1️⃣ BASIC USER COURSE ROUTES
 // -------------------------------------------
 
-// Enrolled / approved courses for current user (HIDDEN EXCLUDED)
+// Enrolled / approved courses for current user (company scoped)
 router.get('/my', auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -68,10 +60,11 @@ router.get('/my', auth, async (req, res) => {
     LEFT JOIN user_progress up
            ON up.user_id = uc.user_id AND up.course_id = uc.course_id
         WHERE uc.user_id = $1
+          AND c.company_id = $2
           AND c.is_active = TRUE
           AND c.hidden = FALSE
      ORDER BY c.title`,
-      [req.user.id],
+      [req.user.id, req.user.company_id],
     );
     res.json(rows);
   } catch (err) {
@@ -80,7 +73,7 @@ router.get('/my', auth, async (req, res) => {
   }
 });
 
-// Catalog of active courses (user doesn’t have)
+// Catalog of active courses user doesn't have yet (company scoped)
 router.get('/catalog', auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -89,9 +82,10 @@ router.get('/catalog', auth, async (req, res) => {
          FROM courses c
         WHERE c.is_active = TRUE
           AND c.hidden = FALSE
+          AND c.company_id = $2
           AND c.id NOT IN (SELECT course_id FROM user_courses WHERE user_id=$1)
      ORDER BY c.title`,
-      [req.user.id],
+      [req.user.id, req.user.company_id],
     );
     res.json(rows);
   } catch (err) {
@@ -100,15 +94,18 @@ router.get('/catalog', auth, async (req, res) => {
   }
 });
 
-// (Optional) available list alias at /courses
+// All active courses for this company
 router.get('/', auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT c.id, c.title, c.category, c.points, c.media_type, c.asset_url, c.thumbnail_url, c.duration_seconds
+      `SELECT c.id, c.title, c.category, c.points, c.media_type,
+              c.asset_url, c.thumbnail_url, c.duration_seconds
          FROM courses c
         WHERE c.is_active = TRUE
           AND c.hidden = FALSE
+          AND c.company_id = $1
      ORDER BY c.title`,
+      [req.user.company_id],
     );
     res.json(rows);
   } catch (err) {
@@ -117,17 +114,30 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Request course access (user)
+// Request course access — verify course belongs to user's company first
 router.post('/request', auth, async (req, res) => {
   const { course_id } = req.body || {};
   if (!course_id)
     return res.status(400).json({ message: 'course_id required' });
 
-  await pool.query(
-    'INSERT INTO course_requests (user_id, course_id, status) VALUES ($1, $2, $3)',
-    [req.user.id, course_id, 'pending'],
-  );
-  res.status(201).json({ ok: true });
+  try {
+    // Verify course belongs to this company
+    const { rowCount } = await pool.query(
+      `SELECT 1 FROM courses WHERE id = $1 AND company_id = $2`,
+      [course_id, req.user.company_id],
+    );
+    if (!rowCount)
+      return res.status(404).json({ message: 'Course not found.' });
+
+    await pool.query(
+      'INSERT INTO course_requests (user_id, course_id, status) VALUES ($1, $2, $3)',
+      [req.user.id, course_id, 'pending'],
+    );
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    console.error('POST /courses/request error:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Admin: List course assets
@@ -149,9 +159,7 @@ router.get('/:id/assets', auth, requireRole('admin'), async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
-// User's own course requests (for AvailableCourses)
-// ------------------------------------------------------
+// User's own course requests
 router.get('/requests/mine', auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -171,40 +179,36 @@ router.get('/requests/mine', auth, async (req, res) => {
 // 2️⃣ COURSE DETAILS & STREAMING
 // -------------------------------------------
 
-// Get course detail (for user) — REQUIRE course active, then enrollment
+// Get course detail — company scoped
 router.get('/detail/:courseId', auth, async (req, res) => {
   const { courseId } = req.params;
   const userId = req.user.id;
+  const company_id = req.user.company_id;
 
   try {
     const { rows: courseRows } = await pool.query(
       `SELECT id, title, category, points, duration_seconds, description, is_active, hidden
          FROM courses
-        WHERE id=$1`,
-      [courseId],
+        WHERE id = $1 AND company_id = $2`,
+      [courseId, company_id],
     );
     if (!courseRows.length)
       return res.status(404).json({ error: 'Course not found.' });
 
     const course = courseRows[0];
 
-    // Block hidden / inactive courses
-    if (course.hidden) {
+    if (course.hidden)
       return res.status(403).json({ error: 'Course is hidden.' });
-    }
-    if (!course.is_active) {
+    if (!course.is_active)
       return res.status(403).json({ error: 'Course is inactive.' });
-    }
 
-    // Verify enrollment (if your flows require it)
+    // Verify enrollment
     const approved = await pool.query(
       `SELECT 1 FROM user_courses WHERE user_id=$1 AND course_id=$2`,
       [userId, courseId],
     );
     if (!approved.rowCount)
-      return res
-        .status(403)
-        .json({ error: 'You are not enrolled in this course.' });
+      return res.status(403).json({ error: 'You are not enrolled in this course.' });
 
     // Course videos
     const { rows: videos } = await pool.query(
@@ -245,10 +249,11 @@ router.get('/detail/:courseId', auth, async (req, res) => {
   }
 });
 
-// Get playback URL for a video (presigned S3 GET) — REQUIRE course active
+// Get playback URL for a video — company scoped
 router.get('/asset/:assetId/stream-url', auth, async (req, res) => {
   const { assetId } = req.params;
   const userId = req.user.id;
+  const company_id = req.user.company_id;
 
   try {
     const { rows } = await pool.query(
@@ -264,10 +269,10 @@ router.get('/asset/:assetId/stream-url', auth, async (req, res) => {
     if (asset.kind !== 'video')
       return res.status(400).json({ error: 'Not a video asset.' });
 
-    // Course must be active & not hidden
+    // Course must belong to this company, be active and not hidden
     const { rows: courseRows } = await pool.query(
-      `SELECT is_active, hidden FROM courses WHERE id=$1`,
-      [asset.course_id],
+      `SELECT is_active, hidden FROM courses WHERE id=$1 AND company_id=$2`,
+      [asset.course_id, company_id],
     );
     if (!courseRows.length)
       return res.status(404).json({ error: 'Course not found.' });
@@ -285,11 +290,8 @@ router.get('/asset/:assetId/stream-url', auth, async (req, res) => {
       return res.status(403).json({ error: 'Not enrolled in this course.' });
 
     if (!S3_BUCKET || !asset.s3_key)
-      return res
-        .status(500)
-        .json({ error: 'Missing S3 configuration or file key.' });
+      return res.status(500).json({ error: 'Missing S3 configuration or file key.' });
 
-    // Presign for private bucket
     const url = await signGetUrl({
       key: asset.s3_key,
       fileName: asset.file_name || 'video',
@@ -304,7 +306,7 @@ router.get('/asset/:assetId/stream-url', auth, async (req, res) => {
 });
 
 // -------------------------------------------
-// 3️⃣ (LEGACY) VIDEO PROGRESS → PROXY TO KPI
+// 3️⃣ VIDEO PROGRESS
 // -------------------------------------------
 router.post('/asset/:assetId/progress', auth, async (req, res) => {
   const { assetId } = req.params;
@@ -312,7 +314,6 @@ router.post('/asset/:assetId/progress', auth, async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Verify the asset and course
     const { rows } = await pool.query(
       `SELECT course_id FROM course_assets WHERE id=$1 AND kind='video'`,
       [assetId],
@@ -321,7 +322,6 @@ router.post('/asset/:assetId/progress', auth, async (req, res) => {
       return res.status(404).json({ error: 'Video asset not found.' });
     const courseId = rows[0].course_id;
 
-    // Verify enrollment
     const allowed = await pool.query(
       `SELECT 1 FROM user_courses WHERE user_id=$1 AND course_id=$2`,
       [userId, courseId],
@@ -329,12 +329,8 @@ router.post('/asset/:assetId/progress', auth, async (req, res) => {
     if (!allowed.rowCount)
       return res.status(403).json({ error: 'Not enrolled in this course.' });
 
-    // === KPI-style tracking (unchanged) ===
     const dur = Math.max(1, Math.floor(Number(durationSec) || 0));
-    const pos = Math.max(
-      0,
-      Math.min(Math.floor(Number(positionSec) || 0), dur),
-    );
+    const pos = Math.max(0, Math.min(Math.floor(Number(positionSec) || 0), dur));
     const today = new Date().toISOString().slice(0, 10);
 
     await pool.query('BEGIN');
@@ -350,7 +346,7 @@ router.post('/asset/:assetId/progress', auth, async (req, res) => {
       ? Math.max(0, Number(lastRowQ.rows[0].position_sec || 0))
       : 0;
     const rawDelta = pos - lastPos;
-    const deltaWatched = Math.max(0, Math.min(rawDelta, 30)); // safety cap
+    const deltaWatched = Math.max(0, Math.min(rawDelta, 30));
 
     await pool.query(
       `INSERT INTO user_video_progress (user_id, asset_id, position_sec, duration_sec, updated_at)
@@ -402,10 +398,7 @@ router.post('/asset/:assetId/progress', auth, async (req, res) => {
     });
   } catch (err) {
     await pool.query('ROLLBACK').catch(() => {});
-    console.error(
-      'POST /courses/asset/:assetId/progress error (proxy to KPI):',
-      err,
-    );
+    console.error('POST /courses/asset/:assetId/progress error:', err);
     res.status(500).json({ error: 'Database error while saving progress.' });
   }
 });

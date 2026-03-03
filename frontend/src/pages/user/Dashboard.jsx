@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../../api';
 import Nav from '../../components/Navbar';
 import CourseCard from '../../components/CourseCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../../components/useruistyles/UserDashboard.css';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,6 +27,8 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [dash, setDash] = useState(null);
   const { user } = useAuth();
+
+  const slug = user?.company_slug;
 
   useEffect(() => {
     let mounted = true;
@@ -100,7 +102,7 @@ export default function UserDashboard() {
                 course={c}
                 actionText="Continue"
                 variant="dashboard"
-                onAction={() => navigate(`/courses/detail/${c.id}`)}
+                onAction={() => navigate(`/${slug}/courses/detail/${c.id}`)}
               />
             ))}
             {enrolledCourses.length === 0 && (
@@ -162,9 +164,9 @@ export default function UserDashboard() {
             )}
           </div>
           <div className="view-all">
-            <a href="/AvailableCourses" className="view-all-link">
-              View All Available Courses
-            </a>
+            <Link to={`/${slug}/courses`} className="view-all-link">
+              View All Available Courses →
+            </Link>
           </div>
         </section>
 
@@ -241,9 +243,9 @@ export default function UserDashboard() {
           </div>
 
           <div className="view-all">
-            <a href="/leaderboard" className="view-all-link">
+            <Link to={`/${slug}/leaderboard`} className="view-all-link">
               View Full Leaderboard →
-            </a>
+            </Link>
           </div>
         </section>
       </div>

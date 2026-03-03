@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import Nav from '../../components/Navbar';
 import '../../components/useruistyles/CourseDetail.css';
+import { useAuth } from '../../context/AuthContext';
 
 // compact duration like "1h 02m" / "3m 40s" / "42s"
 function fmtShort(sec = 0) {
@@ -32,6 +33,9 @@ export default function CourseDetail() {
 
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+
+  const { user } = useAuth(); 
+  const slug = user?.company_slug;
 
   // live aggregates from /kpi/progress
   const [agg, setAgg] = useState({
@@ -168,7 +172,7 @@ export default function CourseDetail() {
 
               <button
                 className="cd-back"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/${slug}/dashboard')}
               >
                 ← Back to Dashboard
               </button>
@@ -247,7 +251,7 @@ export default function CourseDetail() {
                         </div>
                       </div>
                       <Link
-                        to={`/courses/${courseId}/video/${v.id}`}
+                        to={`/${slug}/courses/${courseId}/video/${v.id}`}
                         state={{
                           fileName: v.file_name,
                           courseTitle: course.title,

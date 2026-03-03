@@ -4,8 +4,12 @@ import api from '../../api';
 import Nav from '../../components/Navbar';
 import VideoPlayer from '../../components/VideoPlayer';
 import '../../components/useruistyles/VideoWatch.css';
+import { useAuth } from '../../context/AuthContext';
 
 export default function VideoWatch() {
+  const { user } = useAuth(); 
+  const slug = user?.company_slug;
+
   const { courseId, assetId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -115,7 +119,7 @@ export default function VideoWatch() {
     if (nextVideo) {
       setFileName(nextVideo.file_name);
       setCurrentVideo(nextVideo);
-      navigate(`/courses/${courseId}/video/${vId}`, { replace: true });
+      navigate(`/${slug}/courses/${courseId}/video/${vId}`, { replace: true });
     }
   };
 
@@ -264,7 +268,7 @@ export default function VideoWatch() {
                       </div>
                       <button
                         className="vw-next-btn"
-                        onClick={() => navigate(`/courses/detail/${nc.id}`)}
+                        onClick={() => navigate(`/${slug}/courses/detail/${nc.id}`)}
                       >
                         Go to course
                       </button>
