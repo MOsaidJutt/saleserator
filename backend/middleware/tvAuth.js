@@ -1,7 +1,7 @@
-import pool from "../db.js";
-import { hashToken } from "../utils/tvToken.js";
+const pool = require("../db.js");
+const { hashToken } = require("../utils/tvToken.js");
 
-export async function tvAuth(req, res, next) {
+async function tvAuth(req, res, next) {
   const token =
     req.query.token ||
     req.headers["x-tv-token"];
@@ -13,13 +13,11 @@ export async function tvAuth(req, res, next) {
   const tokenHash = hashToken(token);
 
   const { rows } = await pool.query(
-    `
-    SELECT id
-    FROM tv_tokens
-    WHERE token_hash = $1
-      AND revoked = FALSE
-      AND (expires_at IS NULL OR expires_at > NOW())
-    `,
+    `SELECT id, company_id
+       FROM tv_tokens
+      WHERE token_hash = $1
+        AND revoked = FALSE
+        AND (expires_at IS NULL OR expires_at > NOW())`,
     [tokenHash]
   );
 
@@ -27,11 +25,13 @@ export async function tvAuth(req, res, next) {
     return res.status(401).json({ error: "Invalid or revoked TV token" });
   }
 
-  // Future-proof hook
+  // Attach company_id so TV routes can scope their queries
   req.tv = {
-    scope: "tv"
-    // later: company_id
+    scope: "tv",
+    company_id: rows[0].company_id,
   };
 
   next();
 }
+
+module.exports = { tvAuth };

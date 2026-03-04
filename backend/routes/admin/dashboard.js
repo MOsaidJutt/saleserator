@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../db');
+const { auth, requireRole } = require('../../middleware/auth');
 
-// ------------------------------
-// Range helper for activities-based widgets
-// ------------------------------
 function getRange(period) {
   const p = String(period || 'daily').toLowerCase();
   if (p === 'weekly') {
@@ -40,23 +38,9 @@ function getRange(period) {
   };
 }
 
-// ------------------------------
-// Period key helpers for leaderboards.period
-// VERIFIED formats:
-// - daily:YYYY-MM-DD
-// - weekly:YYYY-WNN
-// - monthly:YYYY-MM
-// - all
-// ------------------------------
-function pad2(n) {
-  return String(n).padStart(2, '0');
-}
-function isoYmdUTC(d) {
-  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
-}
-function isoYmUTC(d) {
-  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`;
-}
+function pad2(n) { return String(n).padStart(2, '0'); }
+function isoYmdUTC(d) { return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`; }
+function isoYmUTC(d) { return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`; }
 function isoWeekKeyUTC(date) {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const dayNum = d.getUTCDay() || 7;
@@ -77,182 +61,155 @@ function buildPeriodKey(period, refDate = new Date()) {
 function buildPrevPeriodKey(period) {
   const p = String(period || 'daily').toLowerCase();
   const d = new Date();
-
-  if (p === 'daily') {
-    d.setUTCDate(d.getUTCDate() - 1);
-    return buildPeriodKey('daily', d);
-  }
-  if (p === 'weekly') {
-    d.setUTCDate(d.getUTCDate() - 7);
-    return buildPeriodKey('weekly', d);
-  }
-  if (p === 'monthly') {
-    d.setUTCMonth(d.getUTCMonth() - 1);
-    return buildPeriodKey('monthly', d);
-  }
+  if (p === 'daily') { d.setUTCDate(d.getUTCDate() - 1); return buildPeriodKey('daily', d); }
+  if (p === 'weekly') { d.setUTCDate(d.getUTCDate() - 7); return buildPeriodKey('weekly', d); }
+  if (p === 'monthly') { d.setUTCMonth(d.getUTCMonth() - 1); return buildPeriodKey('monthly', d); }
   if (p === 'all') return 'all';
-
   d.setUTCDate(d.getUTCDate() - 1);
   return buildPeriodKey('daily', d);
 }
 
-// ------------------------------
-// Admin Command Center (period-aware)
-// ------------------------------
-router.get('/dashboard', async (req, res) => {
+// Admin Command Center (period-aware, company scoped)
+router.get('/dashboard', auth, requireRole('admin'), async (req, res) => {
   try {
-    // ✅ default daily
+    const company_id = req.user.company_id;
     const period = String(req.query.period || 'daily').toLowerCase();
-
-    // Activities time windows (for summary & feed)
     const { startSql, endSql, prevStartSql, prevEndSql } = getRange(period);
-
-    // Leaderboards period keys (for leaderboard + total SP KPI)
     const periodKey = buildPeriodKey(period);
     const prevPeriodKey = buildPrevPeriodKey(period);
 
-    // -------------------------
-    // Team SP current vs previous period (FROM leaderboards)
-    // Excludes admins + blank names (so KPI matches rankings population)
-    // -------------------------
+    // Team SP current vs previous (company scoped)
     const teamSpQuery = `
-      SELECT COALESCE(SUM(lb.total_points),0)::bigint AS sp
-      FROM leaderboards lb
-      JOIN users u ON u.user_id = lb.user_id
-      WHERE lb.period = $1
-        AND LOWER(COALESCE(u.role, '')) <> 'admin'
-        AND u.name IS NOT NULL
-        AND btrim(u.name) <> ''
+      SELECT COALESCE(SUM(lb.total_points), 0)::bigint AS sp
+        FROM leaderboards lb
+        JOIN users u ON u.user_id = lb.user_id
+       WHERE lb.period = $1
+         AND u.company_id = $2
+         AND LOWER(COALESCE(u.role, '')) <> 'admin'
+         AND u.name IS NOT NULL
+         AND btrim(u.name) <> ''
     `;
-    const teamSpCurRes = await db.query(teamSpQuery, [periodKey]);
-    const teamSpPrevRes = await db.query(teamSpQuery, [prevPeriodKey]);
+    const teamSpCurRes = await db.query(teamSpQuery, [periodKey, company_id]);
+    const teamSpPrevRes = await db.query(teamSpQuery, [prevPeriodKey, company_id]);
 
-    /* ===== CATEGORY TOTALS ===== */
+    // Category totals (company scoped via users JOIN)
     const categoryCurQ = `
       SELECT
-        COUNT(*) FILTER (WHERE category_id = 1)::int AS combat_current,
-        COUNT(*) FILTER (WHERE category_id = 2)::int AS intel_current,
-        COUNT(*) FILTER (WHERE category_id = 3)::int AS training_current
-      FROM activities
-      WHERE date_logged::date >= ${startSql}
-        AND date_logged::date <= ${endSql}
+        COUNT(*) FILTER (WHERE a.category_id = 1)::int AS combat_current,
+        COUNT(*) FILTER (WHERE a.category_id = 2)::int AS intel_current,
+        COUNT(*) FILTER (WHERE a.category_id = 3)::int AS training_current
+        FROM activities a
+        JOIN users u ON u.user_id = a.user_id
+       WHERE u.company_id = $1
+         AND a.date_logged::date >= ${startSql}
+         AND a.date_logged::date <= ${endSql}
     `;
     const categoryPrevQ = `
       SELECT
-        COUNT(*) FILTER (WHERE category_id = 1)::int AS combat_previous,
-        COUNT(*) FILTER (WHERE category_id = 2)::int AS intel_previous,
-        COUNT(*) FILTER (WHERE category_id = 3)::int AS training_previous
-      FROM activities
-      WHERE date_logged::date >= ${prevStartSql}
-        AND date_logged::date <= ${prevEndSql}
+        COUNT(*) FILTER (WHERE a.category_id = 1)::int AS combat_previous,
+        COUNT(*) FILTER (WHERE a.category_id = 2)::int AS intel_previous,
+        COUNT(*) FILTER (WHERE a.category_id = 3)::int AS training_previous
+        FROM activities a
+        JOIN users u ON u.user_id = a.user_id
+       WHERE u.company_id = $1
+         AND a.date_logged::date >= ${prevStartSql}
+         AND a.date_logged::date <= ${prevEndSql}
     `;
-    const [curCat, prevCat] = await Promise.all([db.query(categoryCurQ), db.query(categoryPrevQ)]);
+    const [curCat, prevCat] = await Promise.all([
+      db.query(categoryCurQ, [company_id]),
+      db.query(categoryPrevQ, [company_id]),
+    ]);
 
     const dealsCurQ = `
       SELECT COUNT(*)::int AS deals_current
-      FROM activities
-      WHERE activity_type = 'Deals'
-        AND date_logged::date >= ${startSql}
-        AND date_logged::date <= ${endSql}
+        FROM activities a
+        JOIN users u ON u.user_id = a.user_id
+       WHERE a.activity_type = 'Deals'
+         AND u.company_id = $1
+         AND a.date_logged::date >= ${startSql}
+         AND a.date_logged::date <= ${endSql}
     `;
     const dealsPrevQ = `
       SELECT COUNT(*)::int AS deals_previous
-      FROM activities
-      WHERE activity_type = 'Deals'
-        AND date_logged::date >= ${prevStartSql}
-        AND date_logged::date <= ${prevEndSql}
+        FROM activities a
+        JOIN users u ON u.user_id = a.user_id
+       WHERE a.activity_type = 'Deals'
+         AND u.company_id = $1
+         AND a.date_logged::date >= ${prevStartSql}
+         AND a.date_logged::date <= ${prevEndSql}
     `;
-    const dealsCurRes = await db.query(dealsCurQ);
-    const dealsPrevRes = await db.query(dealsPrevQ);
+    const [dealsCurRes, dealsPrevRes] = await Promise.all([
+      db.query(dealsCurQ, [company_id]),
+      db.query(dealsPrevQ, [company_id]),
+    ]);
 
-    // -------------------------
-    // 🔥 Mission Distribution (percentages + dynamic insight helpers)
-    // -------------------------
+    // Mission distribution
     const combatCur = Number(curCat.rows[0]?.combat_current || 0);
     const intelCur = Number(curCat.rows[0]?.intel_current || 0);
     const trainingCur = Number(curCat.rows[0]?.training_current || 0);
-
     const missionTotal = combatCur + intelCur + trainingCur;
     const safeTotal = missionTotal > 0 ? missionTotal : 1;
-
     const combatPct = Math.round((combatCur / safeTotal) * 100);
     const intelPct = Math.round((intelCur / safeTotal) * 100);
     const trainingPct = Math.round((trainingCur / safeTotal) * 100);
-
     let dominant = 'Combat';
     if (intelCur >= combatCur && intelCur >= trainingCur) dominant = 'R&D / Intel';
     else if (trainingCur >= combatCur && trainingCur >= intelCur) dominant = 'Training';
 
-    // -------------------------
-    // Top Performers (FROM leaderboards) - exclude admins + blank names
-    // + include user rank from user_profile
-    // -------------------------
+    // Top performers (company scoped, company-scoped rank via RANK() OVER)
     const topQuery = `
       SELECT
         u.user_id,
         u.name AS user_name,
-
-        -- [Unverified] Adjust this column name if your schema differs.
         up.rank_name AS user_rank,
-
         COALESCE(lb.total_points, 0)::bigint AS sp,
-        lb.rank,
-
+        RANK() OVER (ORDER BY lb.total_points DESC) AS rank,
         COUNT(*) FILTER (WHERE a.category_id = 1) AS combat_count,
         COUNT(*) FILTER (WHERE a.category_id = 2) AS rd_intel_count,
         COUNT(*) FILTER (WHERE a.category_id = 3) AS training_count,
         COUNT(*) FILTER (WHERE a.activity_type = 'Deals') AS deals_count
-
       FROM leaderboards lb
       JOIN users u ON u.user_id = lb.user_id
-
       LEFT JOIN user_profile up ON up.user_id = u.user_id
-
       LEFT JOIN activities a ON a.user_id = u.user_id
         AND a.date_logged::date >= ${startSql}
         AND a.date_logged::date <= ${endSql}
-
       WHERE lb.period = $1
-        AND LOWER(COALESCE(u.role,'')) <> 'admin'
+        AND u.company_id = $2
+        AND LOWER(COALESCE(u.role, '')) <> 'admin'
         AND u.name IS NOT NULL
         AND btrim(u.name) <> ''
-
-      GROUP BY u.user_id, u.name, up.rank_name, lb.total_points, lb.rank
-      ORDER BY lb.rank ASC
+      GROUP BY u.user_id, u.name, up.rank_name, lb.total_points
+      ORDER BY lb.total_points DESC
       LIMIT 10
     `;
-    const topRes = await db.query(topQuery, [periodKey]);
+    const topRes = await db.query(topQuery, [periodKey, company_id]);
 
-    // -------------------------
-    // At-Risk (today/3-day signals) — exclude admins + blank names
-    // -------------------------
+    // At-risk reps (company scoped)
     const atRiskQuery = `
       WITH per_user AS (
         SELECT
           u.user_id,
           u.name,
-          COALESCE(COUNT(*) FILTER (WHERE a.date_logged = CURRENT_DATE),0)::int AS actions_today,
+          COALESCE(COUNT(*) FILTER (WHERE a.date_logged = CURRENT_DATE), 0)::int AS actions_today,
           COALESCE(COUNT(*) FILTER (
             WHERE a.date_logged >= (CURRENT_DATE - INTERVAL '2 days')::date
               AND a.date_logged <= CURRENT_DATE
-          ),0)::int AS actions_last_3,
+          ), 0)::int AS actions_last_3,
           COALESCE(COUNT(*) FILTER (
             WHERE a.date_logged >= (CURRENT_DATE - INTERVAL '5 days')::date
               AND a.date_logged <= (CURRENT_DATE - INTERVAL '3 days')::date
-          ),0)::int AS actions_prev_3
+          ), 0)::int AS actions_prev_3
         FROM users u
         LEFT JOIN activities a ON a.user_id = u.user_id
-        WHERE LOWER(COALESCE(u.role, '')) <> 'admin'
+        WHERE u.company_id = $1
+          AND LOWER(COALESCE(u.role, '')) <> 'admin'
           AND u.name IS NOT NULL
           AND btrim(u.name) <> ''
         GROUP BY u.user_id, u.name
       )
       SELECT
-        user_id,
-        name,
-        actions_today,
-        actions_last_3,
-        actions_prev_3,
+        user_id, name, actions_today, actions_last_3, actions_prev_3,
         CASE
           WHEN actions_today = 0 THEN 'red'
           WHEN actions_last_3 < actions_prev_3 THEN 'yellow'
@@ -271,11 +228,9 @@ router.get('/dashboard', async (req, res) => {
         actions_last_3 ASC
       LIMIT 10
     `;
-    const atRiskRes = await db.query(atRiskQuery);
+    const atRiskRes = await db.query(atRiskQuery, [company_id]);
 
-    // -------------------------
-    // Recent activity feed (last 10) — ignore course/video completions
-    // -------------------------
+    // Recent activity feed (company scoped)
     const recentActivityQuery = `
       SELECT
         u.name AS user_name,
@@ -284,22 +239,23 @@ router.get('/dashboard', async (req, res) => {
         a.updated_at
       FROM activities a
       JOIN users u ON a.user_id = u.user_id
-      WHERE LOWER(TRIM(a.activity_type)) NOT IN ('course_completed','video_completed')
+      WHERE u.company_id = $1
+        AND LOWER(TRIM(a.activity_type)) NOT IN ('course_completed', 'video_completed')
       ORDER BY a.updated_at DESC
       LIMIT 10
     `;
-    const recentActivityRes = await db.query(recentActivityQuery);
+    const recentActivityRes = await db.query(recentActivityQuery, [company_id]);
 
-    // -------------------------
-    // Quota progress = this month (kept from activities)
-    // -------------------------
+    // Monthly SP (company scoped)
     const monthlySpQuery = `
-      SELECT COALESCE(SUM(points),0)::bigint AS sp_month
-      FROM activities
-      WHERE date_logged >= date_trunc('month', CURRENT_DATE)::date
-        AND date_logged <= CURRENT_DATE
+      SELECT COALESCE(SUM(a.points), 0)::bigint AS sp_month
+        FROM activities a
+        JOIN users u ON u.user_id = a.user_id
+       WHERE u.company_id = $1
+         AND a.date_logged >= date_trunc('month', CURRENT_DATE)::date
+         AND a.date_logged <= CURRENT_DATE
     `;
-    const monthlySpRes = await db.query(monthlySpQuery);
+    const monthlySpRes = await db.query(monthlySpQuery, [company_id]);
 
     res.json({
       period,
@@ -327,25 +283,16 @@ router.get('/dashboard', async (req, res) => {
           previous: prevCat.rows[0]?.training_previous || 0,
         },
       },
-
-      // ✅ NEW: mission distribution for the radar chart + dynamic insight
       mission_distribution: {
         combat_pct: combatPct,
         intel_pct: intelPct,
         training_pct: trainingPct,
         dominant,
-        totals: {
-          combat: combatCur,
-          intel: intelCur,
-          training: trainingCur,
-          total: missionTotal,
-        },
+        totals: { combat: combatCur, intel: intelCur, training: trainingCur, total: missionTotal },
       },
-
       top_performers: topRes.rows || [],
       at_risk_reps: atRiskRes.rows || [],
       recent_activity: recentActivityRes.rows || [],
-
       quota_progress: {
         sp_month: Number(monthlySpRes.rows?.[0]?.sp_month || 0),
         goal_sp_month: null,

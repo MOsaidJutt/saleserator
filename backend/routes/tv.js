@@ -6,7 +6,7 @@ const { addClient } = require("../utils/tvEvents");
 const router = express.Router();
 
 function utcDateStr() {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+  return new Date().toISOString().slice(0, 10);
 }
 
 // SSE stream
@@ -24,26 +24,25 @@ router.get("/events", tvAuth, (req, res) => {
 
 /**
  * GET /tv/leaderboard?period=daily|weekly|monthly|all&refresh=0
- * Uses mk_period_key + reads from leaderboards snapshot table.
+ * Company scoped via company_id stored in the TV token.
  */
 router.get("/leaderboard", tvAuth, async (req, res) => {
   try {
+    const company_id = req.tv.company_id;
     const period = (req.query.period || "daily").toLowerCase();
     const refresh = String(req.query.refresh || "0") === "1";
-
-    // ✅ Use same date logic as your activity logger
     const asOfDate = utcDateStr();
 
-    // 1) Compute correct period key for the same date basis
+    // 1) Compute period key
     const { rows: keyRows } = await pool.query(
-      `SELECT mk_period_key($1::text, $2::date) AS key;`,
+      `SELECT mk_period_key($1::text, $2::date) AS key`,
       [period, asOfDate]
     );
 
     const periodKey = keyRows?.[0]?.key;
     if (!periodKey) return res.status(400).json({ error: "invalid_period" });
 
-    // 2) Optional refresh (for live feel)
+    // 2) Optional refresh
     if (refresh) {
       await pool.query(`SELECT refresh_leaderboard($1::text, $2::date)`, [
         period,
@@ -51,20 +50,19 @@ router.get("/leaderboard", tvAuth, async (req, res) => {
       ]);
     }
 
-    // 3) Fetch top 10
+    // 3) Fetch top 10 — company scoped with company-scoped rank
     const { rows } = await pool.query(
-      `
-      SELECT lb.user_id,
-             lb.total_points AS total_points,
-             lb.rank,
-             u.name
-        FROM leaderboards lb
-        LEFT JOIN users u ON u.user_id = lb.user_id
-       WHERE lb.period = $1
-       ORDER BY lb.rank ASC, lb.user_id ASC
-       LIMIT 10
-      `,
-      [periodKey]
+      `SELECT lb.user_id,
+              lb.total_points,
+              u.name,
+              RANK() OVER (ORDER BY lb.total_points DESC) AS rank
+         FROM leaderboards lb
+         JOIN users u ON u.user_id = lb.user_id
+        WHERE lb.period = $1
+          AND u.company_id = $2
+        ORDER BY lb.total_points DESC
+        LIMIT 10`,
+      [periodKey, company_id]
     );
 
     res.json({
@@ -78,6 +76,5 @@ router.get("/leaderboard", tvAuth, async (req, res) => {
     res.status(500).json({ error: "tv_leaderboard_failed" });
   }
 });
-
 
 module.exports = router;

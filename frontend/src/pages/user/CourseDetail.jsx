@@ -172,7 +172,7 @@ export default function CourseDetail() {
 
               <button
                 className="cd-back"
-                onClick={() => navigate('/${slug}/dashboard')}
+                onClick={() => navigate(`/${slug}/dashboard`)}
               >
                 ← Back to Dashboard
               </button>

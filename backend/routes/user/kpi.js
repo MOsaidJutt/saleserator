@@ -1,4 +1,4 @@
-// routes/kpi.js
+// routes/user/kpi.js
 const express = require('express');
 const pool = require('../../db');
 const { auth } = require('../../middleware/auth');
@@ -7,9 +7,8 @@ const router = express.Router();
 const VIDEO_COMPLETION_POINTS = 5;
 const COURSE_COMPLETION_POINTS = 50;
 
-// ---------- helper: find next recommended course in same category ----------
-async function getNextCourseSameCategory(userId, courseId) {
-  // Step 1: Get all courses in the same category, excluding the current course
+// ---------- helper: find next recommended course in same category (company scoped) ----------
+async function getNextCourseSameCategory(userId, courseId, company_id) {
   const q = await pool.query(
     `
     WITH base AS (
@@ -27,6 +26,7 @@ async function getNextCourseSameCategory(userId, courseId) {
        AND up.user_id = $1
       WHERE c2.category = c.category
         AND c2.id <> $2
+        AND c2.company_id = $3
         AND COALESCE(c2.hidden, FALSE) = FALSE
     )
     SELECT id, title, category, points, user_percent
@@ -36,10 +36,9 @@ async function getNextCourseSameCategory(userId, courseId) {
               created_at DESC NULLS LAST,
               id ASC
     `,
-    [userId, courseId],
+    [userId, courseId, company_id],
   );
 
-  // Step 2: Check if the current course is completed (100% progress)
   const progressQuery = await pool.query(
     'SELECT progress_percent FROM user_progress WHERE user_id = $1 AND course_id = $2',
     [userId, courseId],
@@ -47,30 +46,20 @@ async function getNextCourseSameCategory(userId, courseId) {
 
   const progress = progressQuery.rows[0]?.progress_percent || 0;
 
-  // If the current course isn't completed (progress < 100%), don't recommend any next course yet
-  if (progress !== 100) {
-    return null;
-  }
+  if (progress !== 100) return null;
 
-  // Step 3: Check for the next course in the same category
   for (let course of q.rows) {
     const nextCourseId = course.id;
 
-    // Step 4: Fetch the progress of the next course (separate query)
     const nextCourseProgressQuery = await pool.query(
       'SELECT progress_percent FROM user_progress WHERE user_id = $1 AND course_id = $2',
       [userId, nextCourseId],
     );
 
-    const nextCourseProgress =
-      nextCourseProgressQuery.rows[0]?.progress_percent || 0;
+    const nextCourseProgress = nextCourseProgressQuery.rows[0]?.progress_percent || 0;
 
-    // Step 5: Check if the next course is already completed (100% progress)
-    if (nextCourseProgress === 100) {
-      continue; // Skip recommending this course if it is already 100% complete
-    }
+    if (nextCourseProgress === 100) continue;
 
-    // Step 6: Check if the user is enrolled in this next course
     const enrollmentQuery = await pool.query(
       'SELECT 1 FROM user_courses WHERE user_id = $1 AND course_id = $2',
       [userId, nextCourseId],
@@ -78,13 +67,11 @@ async function getNextCourseSameCategory(userId, courseId) {
 
     const isEnrolled = enrollmentQuery.rowCount > 0;
 
-    // If the user is enrolled in the next course and it's not completed yet, recommend it
     if (isEnrolled && nextCourseProgress < 100) {
-      return course; // Recommend the next course
+      return course;
     }
   }
 
-  // If no suitable course is found, return null
   return null;
 }
 
@@ -139,18 +126,21 @@ const aggregateSql = `
  */
 router.get('/progress', auth, async (req, res) => {
   const userId = req.user.id;
+  const company_id = req.user.company_id;
   const courseId = Number(req.query.courseId);
   const assetId = Number(req.query.assetId || 0);
+
   if (!Number.isFinite(courseId)) {
     return res.status(400).json({ error: 'courseId is required' });
   }
+
   try {
     const progQ = await pool.query(aggregateSql, [userId, courseId, assetId]);
     const row = progQ.rows?.[0] || {};
 
     let nextCourse = null;
     if (!row.next_video_id) {
-      nextCourse = await getNextCourseSameCategory(userId, courseId);
+      nextCourse = await getNextCourseSameCategory(userId, courseId, company_id);
     }
 
     return res.json({
@@ -169,48 +159,30 @@ router.get('/progress', auth, async (req, res) => {
 
 /**
  * POST /kpi/track/video
- * Body: { courseId, assetId, positionSec, durationSec, sessionId }
  */
 router.post('/track/video', auth, async (req, res) => {
   const userId = req.user.id;
-  const {
-    courseId,
-    assetId,
-    positionSec,
-    durationSec,
-    sessionId = null,
-  } = req.body || {};
+  const company_id = req.user.company_id;
+  const { courseId, assetId, positionSec, durationSec, sessionId = null } = req.body || {};
 
-  if (
-    !courseId ||
-    !assetId ||
-    !Number.isFinite(positionSec) ||
-    !Number.isFinite(durationSec)
-  ) {
-    return res
-      .status(400)
-      .json({
-        error: 'courseId, assetId, positionSec, durationSec are required',
-      });
+  if (!courseId || !assetId || !Number.isFinite(positionSec) || !Number.isFinite(durationSec)) {
+    return res.status(400).json({ error: 'courseId, assetId, positionSec, durationSec are required' });
   }
   if (!sessionId) {
-    return res
-      .status(400)
-      .json({ error: 'Session ID is required to track video progress' });
+    return res.status(400).json({ error: 'Session ID is required to track video progress' });
   }
 
   const dur = Math.max(1, Math.floor(durationSec));
   const pos = Math.max(0, Math.min(Math.floor(positionSec), dur));
   const today = new Date().toISOString().slice(0, 10);
 
-  // Return aggregates even if not played (pos <= 1)
   if (pos <= 1) {
     try {
       const progQ = await pool.query(aggregateSql, [userId, courseId, assetId]);
       const row = progQ.rows?.[0] || {};
       let nextCourse = null;
       if (!row.next_video_id) {
-        nextCourse = await getNextCourseSameCategory(userId, courseId);
+        nextCourse = await getNextCourseSameCategory(userId, courseId, company_id);
       }
       return res.json({
         ok: true,
@@ -244,15 +216,11 @@ router.post('/track/video', auth, async (req, res) => {
       const lastSessionId = lastRowQ.rows[0].session_id;
 
       if (pos <= lastPos && sessionId === lastSessionId) {
-        const progQ = await pool.query(aggregateSql, [
-          userId,
-          courseId,
-          assetId,
-        ]);
+        const progQ = await pool.query(aggregateSql, [userId, courseId, assetId]);
         const row = progQ.rows?.[0] || {};
         let nextCourse = null;
         if (!row.next_video_id) {
-          nextCourse = await getNextCourseSameCategory(userId, courseId);
+          nextCourse = await getNextCourseSameCategory(userId, courseId, company_id);
         }
         await pool.query('COMMIT');
         return res.json({
@@ -268,33 +236,27 @@ router.post('/track/video', auth, async (req, res) => {
       }
     }
 
-    // Credit forward movement (cap 30s per ping)
-    const lastPosForDelta =
-      lastRowQ.rowCount > 0
-        ? Math.max(0, Number(lastRowQ.rows[0].position_sec || 0))
-        : 0;
+    const lastPosForDelta = lastRowQ.rowCount > 0
+      ? Math.max(0, Number(lastRowQ.rows[0].position_sec || 0))
+      : 0;
     const rawDelta = pos - lastPosForDelta;
     const deltaWatched = Math.max(0, Math.min(rawDelta, 30));
 
-    // Upsert + tolerant completion
     await pool.query(
-      `
-      INSERT INTO user_video_progress (user_id, asset_id, position_sec, duration_sec, session_id, completed, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      ON CONFLICT (user_id, asset_id)
-      DO UPDATE SET
-        position_sec = GREATEST(EXCLUDED.position_sec, user_video_progress.position_sec),
-        duration_sec = GREATEST(EXCLUDED.duration_sec, user_video_progress.duration_sec),
-        session_id   = COALESCE(EXCLUDED.session_id, user_video_progress.session_id),
-        completed    = user_video_progress.completed
-                       OR (GREATEST(EXCLUDED.position_sec, user_video_progress.position_sec)
-                           >= GREATEST(EXCLUDED.duration_sec, user_video_progress.duration_sec) - 1),
-        updated_at   = NOW()
-      `,
+      `INSERT INTO user_video_progress (user_id, asset_id, position_sec, duration_sec, session_id, completed, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       ON CONFLICT (user_id, asset_id)
+       DO UPDATE SET
+         position_sec = GREATEST(EXCLUDED.position_sec, user_video_progress.position_sec),
+         duration_sec = GREATEST(EXCLUDED.duration_sec, user_video_progress.duration_sec),
+         session_id   = COALESCE(EXCLUDED.session_id, user_video_progress.session_id),
+         completed    = user_video_progress.completed
+                        OR (GREATEST(EXCLUDED.position_sec, user_video_progress.position_sec)
+                            >= GREATEST(EXCLUDED.duration_sec, user_video_progress.duration_sec) - 1),
+         updated_at   = NOW()`,
       [userId, assetId, pos, dur, sessionId, pos >= dur - 1],
     );
 
-    // Daily aggregates
     await pool.query(
       `INSERT INTO daily_learning_activity (user_id, course_id, activity_date, seconds_watched, assets_viewed)
        VALUES ($1, $2, $3, $4, 0)
@@ -319,7 +281,6 @@ router.post('/track/video', auth, async (req, res) => {
       [userId, courseId, assetId, today],
     );
 
-    // Course aggregates
     const progQ = await pool.query(aggregateSql, [userId, courseId, assetId]);
     const row = progQ.rows?.[0] || {};
     const percent = row.percent || 0;
@@ -338,11 +299,8 @@ router.post('/track/video', auth, async (req, res) => {
       [userId, courseId, percent],
     );
 
-    // Log video completion exactly once
     const sel = await pool.query(
-      `SELECT completed
-         FROM user_video_progress
-        WHERE user_id = $1 AND asset_id = $2`,
+      `SELECT completed FROM user_video_progress WHERE user_id = $1 AND asset_id = $2`,
       [userId, assetId],
     );
     const definitiveCompleted = sel.rows?.[0]?.completed === true;
@@ -358,7 +316,7 @@ router.post('/track/video', auth, async (req, res) => {
         [userId, VIDEO_COMPLETION_POINTS, assetId, 3],
       );
     }
-    // Log course completion exactly once (transition to 100)
+
     if (percent >= 100 && prevPercent < 100) {
       await pool.query(
         `INSERT INTO activities (user_id, activity_type, points, value, date_logged, category_id)
@@ -373,44 +331,16 @@ router.post('/track/video', auth, async (req, res) => {
 
     let nextCourse = null;
     if (!row.next_video_id) {
-      nextCourse = await getNextCourseSameCategory(userId, courseId);
+      nextCourse = await getNextCourseSameCategory(userId, courseId, company_id);
     }
 
     await pool.query('COMMIT');
-    
-    // non-blocking: refresh leaderboard snapshots for relevant periods
-    pool
-      .query("SELECT refresh_leaderboard($1::text, $2::date)", [
-        'daily',
-        today,
-      ])
-      .catch((err) =>
-        console.error('refresh_leaderboard (activity single daily) failed', err),
-      );
-    pool
-      .query("SELECT refresh_leaderboard($1::text, $2::date)", [
-        'weekly',
-        today,
-      ])
-      .catch((err) =>
-        console.error('refresh_leaderboard (activity single weekly) failed', err),
-      );
-    pool
-      .query("SELECT refresh_leaderboard($1::text, $2::date)", [
-        'monthly',
-        today,
-      ])
-      .catch((err) =>
-        console.error('refresh_leaderboard (activity single monthly) failed', err),
-      );
-    pool
-      .query("SELECT refresh_leaderboard($1::text, $2::date)", [
-        'all',
-        today,
-      ])
-      .catch((err) =>
-        console.error('refresh_leaderboard (activity all) failed', err),
-      );
+
+    ['daily', 'weekly', 'monthly', 'all'].forEach((p) => {
+      pool.query('SELECT refresh_leaderboard($1::text, $2::date)', [p, today])
+        .catch((err) => console.error(`refresh_leaderboard (${p}) failed`, err));
+    });
+
     return res.json({
       ok: true,
       deltaWatched,

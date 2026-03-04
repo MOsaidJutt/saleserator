@@ -3,6 +3,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const pool = require('../../db');
 const { auth, requireRole } = require('../../middleware/auth');
+const { validate, inviteUserSchema } = require('../../utils/validators');
 
 const router = express.Router();
 
@@ -13,18 +14,10 @@ router.use(auth, requireRole('admin'));
  * Admin creates a new user under their company.
  * company_id is always pulled from the admin's JWT — never from request body.
  */
-router.post('/users/invite', async (req, res, next) => {
+router.post('/users/invite', validate(inviteUserSchema), async (req, res, next) => {
   try {
     const { email, name, role = 'sales_rep', password } = req.body;
     const company_id = req.user.company_id;
-
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required.' });
-    }
-
-    if (!password) {
-      return res.status(400).json({ message: 'A temporary password is required.' });
-    }
 
     const exists = await pool.query(
       'SELECT user_id FROM users WHERE LOWER(email) = LOWER($1) AND company_id = $2',
@@ -64,9 +57,9 @@ router.get('/users', async (req, res, next) => {
 
     const result = await pool.query(
       `SELECT user_id, email, name, role, company_id, created_at
-       FROM users
-       WHERE company_id = $1
-       ORDER BY created_at DESC`,
+         FROM users
+        WHERE company_id = $1
+        ORDER BY created_at DESC`,
       [company_id]
     );
 
@@ -92,11 +85,10 @@ router.patch('/users/:user_id', async (req, res, next) => {
 
     const result = await pool.query(
       `UPDATE users
-       SET
-         name = COALESCE($1, name),
-         role = COALESCE($2, role)
-       WHERE user_id = $3 AND company_id = $4
-       RETURNING user_id, email, name, role, company_id`,
+          SET name = COALESCE($1, name),
+              role = COALESCE($2, role)
+        WHERE user_id = $3 AND company_id = $4
+        RETURNING user_id, email, name, role, company_id`,
       [name || null, role || null, user_id, company_id]
     );
 
@@ -124,8 +116,8 @@ router.delete('/users/:user_id', async (req, res, next) => {
 
     const result = await pool.query(
       `DELETE FROM users
-       WHERE user_id = $1 AND company_id = $2
-       RETURNING user_id, email, name`,
+        WHERE user_id = $1 AND company_id = $2
+        RETURNING user_id, email, name`,
       [user_id, company_id]
     );
 

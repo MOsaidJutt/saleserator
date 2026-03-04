@@ -4,15 +4,23 @@ import api from '../../api';
 import Nav from '../../components/Navbar';
 import '../../components/adminuistyles/CourseForm.css';
 
+function validatePassword(password) {
+  const errors = [];
+  if (password.length < 8) errors.push('At least 8 characters');
+  if (!/[A-Z]/.test(password)) errors.push('At least one uppercase letter');
+  if (!/[0-9]/.test(password)) errors.push('At least one number');
+  return errors;
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
 
-  // Invite form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('sales_rep');
+  const [passwordErrors, setPasswordErrors] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [rowBusy, setRowBusy] = useState(null);
@@ -38,32 +46,43 @@ export default function AdminUsers() {
     setTimeout(() => setMessage(''), 4000);
   };
 
+  const handlePasswordChange = (e) => {
+    const val = e.target.value;
+    setPassword(val);
+    if (val.length > 0) {
+      setPasswordErrors(validatePassword(val));
+    } else {
+      setPasswordErrors([]);
+    }
+  };
+
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       showMessage('Email and password are required.', 'error');
       return;
     }
+
+    const errors = validatePassword(password);
+    if (errors.length > 0) {
+      showMessage(`Password requirements not met: ${errors.join(', ')}`, 'error');
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await api.post('/admin/users/invite', {
-        name,
-        email,
-        password,
-        role,
-      });
+      const res = await api.post('/admin/users/invite', { name, email, password, role });
       showMessage(res.data.message || 'User invited successfully.', 'success');
       setName('');
       setEmail('');
       setPassword('');
+      setPasswordErrors([]);
       setRole('sales_rep');
       setIsInviteOpen(false);
       fetchUsers();
     } catch (err) {
-      showMessage(
-        err.response?.data?.message || 'Failed to invite user.',
-        'error'
-      );
+      const detail = err.response?.data?.details?.[0]?.message;
+      showMessage(detail || err.response?.data?.message || 'Failed to invite user.', 'error');
     } finally {
       setLoading(false);
     }
@@ -77,10 +96,7 @@ export default function AdminUsers() {
       await fetchUsers();
       showMessage('User removed successfully.', 'success');
     } catch (err) {
-      showMessage(
-        err.response?.data?.message || 'Failed to remove user.',
-        'error'
-      );
+      showMessage(err.response?.data?.message || 'Failed to remove user.', 'error');
     } finally {
       setRowBusy(null);
     }
@@ -94,9 +110,7 @@ export default function AdminUsers() {
       </h2>
 
       {/* ── Invite User (Collapsible) ── */}
-      <section
-        className={`course-form-collapsible ${isInviteOpen ? 'is-open' : ''}`}
-      >
+      <section className={`course-form-collapsible ${isInviteOpen ? 'is-open' : ''}`}>
         <button
           type="button"
           className="collapsible-trigger"
@@ -104,21 +118,8 @@ export default function AdminUsers() {
           aria-expanded={isInviteOpen}
         >
           <span>Invite a New User</span>
-          <svg
-            className="chevron"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 9l6 6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+          <svg className="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
 
@@ -154,10 +155,23 @@ export default function AdminUsers() {
                     className="input-field"
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Temporary Password"
+                    onChange={handlePasswordChange}
+                    placeholder="Min 8 chars, 1 uppercase, 1 number"
                     required
                   />
+                  {/* Live password requirement hints */}
+                  {password.length > 0 && (
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>
+                      {['At least 8 characters', 'At least one uppercase letter', 'At least one number'].map((req) => {
+                        const passing = !passwordErrors.includes(req);
+                        return (
+                          <div key={req} style={{ color: passing ? '#22c55e' : '#ef4444' }}>
+                            {passing ? '✓' : '✗'} {req}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="label">Role</label>
@@ -174,7 +188,7 @@ export default function AdminUsers() {
               <button
                 type="submit"
                 className="submit-btn"
-                disabled={loading}
+                disabled={loading || passwordErrors.length > 0}
               >
                 {loading ? 'Inviting...' : 'Invite User'}
               </button>
@@ -197,9 +211,7 @@ export default function AdminUsers() {
               <article key={u.user_id} className="course-card">
                 <div className="course-card-header">
                   <div>
-                    <div className="course-card-title">
-                      {u.name || '—'}
-                    </div>
+                    <div className="course-card-title">{u.name || '—'}</div>
                     <div className="course-card-sub">
                       {u.email} · {u.role === 'admin' ? 'Admin' : 'Sales Rep'}
                       <span style={{ opacity: 0.5, marginLeft: '0.5rem' }}>
@@ -226,9 +238,7 @@ export default function AdminUsers() {
 
       {/* ── Message ── */}
       {message && (
-        <div
-          className={`message ${messageType === 'error' ? 'message-error' : 'message-success'}`}
-        >
+        <div className={`message ${messageType === 'error' ? 'message-error' : 'message-success'}`}>
           {message}
         </div>
       )}

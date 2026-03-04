@@ -7,23 +7,23 @@ const router = express.Router();
 
 /**
  * POST /admin/tv/token
- * Generates a TV Mode URL (FRONTEND URL)
+ * Generates a TV Mode URL scoped to the admin's company.
+ * company_id is stored with the token so the TV screen only
+ * shows that company's leaderboard without needing a user JWT.
  */
 router.post("/tv/token", auth, requireRole("admin"), async (req, res) => {
   const rawToken = generateTvToken();
   const tokenHash = hashToken(rawToken);
+  const company_id = req.user.company_id;
 
   await pool.query(
-    `INSERT INTO tv_tokens (token_hash) VALUES ($1)`,
-    [tokenHash]
+    `INSERT INTO tv_tokens (token_hash, company_id) VALUES ($1, $2)`,
+    [tokenHash, company_id]
   );
 
-  // ✅ Use env so dev/prod are correct
   const FRONTEND_ORIGIN =
     process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
-  // ✅ IMPORTANT: match your real React route here:
-  // if your TV page route is "/tv-mode", change "/tv" to "/tv-mode"
   const tvUrl = `${FRONTEND_ORIGIN}/tv?token=${encodeURIComponent(rawToken)}`;
 
   res.json({ tv_url: tvUrl });
