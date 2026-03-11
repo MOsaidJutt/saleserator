@@ -271,6 +271,34 @@ router.post('/courses/:id/assets', auth, requireRole('admin'), async (req, res) 
     const vals = [courseId, kind, s3_key, mime_type, size_bytes, duration_seconds, quality_label, is_default, file_name, public_url];
     const { rows } = await pool.query(insertSql, vals);
 
+    // Recalculate user_progress for all enrolled users who had this course at 100%
+    // so the dashboard card no longer shows stale 100% after new video is added
+    await pool.query(
+      `UPDATE user_progress up
+          SET progress_percent = (
+            WITH total_videos AS (
+              SELECT COUNT(*)::numeric AS t
+                FROM course_assets ca
+               WHERE ca.course_id = $1
+            ),
+            completed_videos AS (
+              SELECT COUNT(*)::numeric AS w
+                FROM user_video_progress uvp
+                JOIN course_assets ca ON ca.id = uvp.asset_id
+               WHERE uvp.user_id = up.user_id
+                 AND ca.course_id = $1
+                 AND uvp.completed = TRUE
+            )
+            SELECT CASE WHEN total_videos.t > 0
+                        THEN ROUND((completed_videos.w / total_videos.t) * 100)
+                        ELSE 0 END
+              FROM total_videos, completed_videos
+          ),
+          updated_at = NOW()
+        WHERE up.course_id = $1`,
+      [courseId],
+    );
+
     return res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[add asset] error:', err);
@@ -464,6 +492,33 @@ router.post('/courses/:id/', auth, requireRole('admin'), async (req, res) => {
       );
       inserted.push(rows[0]);
     }
+
+    // Recalculate user_progress for all enrolled users who had this course at 100%
+    // so the dashboard card no longer shows stale 100% after new videos are added
+    await pool.query(
+      `UPDATE user_progress up
+          SET progress_percent = (
+            WITH total AS (
+              SELECT COALESCE(SUM(ca.duration_seconds), 0)::numeric AS t
+                FROM course_assets ca
+               WHERE ca.course_id = $1
+                 AND COALESCE(ca.duration_seconds, 0) > 0
+            ),
+            watched AS (
+              SELECT COALESCE(SUM(LEAST(uvp.position_sec, uvp.duration_sec)), 0)::numeric AS w
+                FROM user_video_progress uvp
+                JOIN course_assets ca ON ca.id = uvp.asset_id
+               WHERE uvp.user_id = up.user_id
+                 AND ca.course_id = $1
+            )
+            SELECT CASE WHEN total.t > 0 THEN ROUND((watched.w / total.t) * 100) ELSE 0 END
+              FROM total, watched
+          ),
+          updated_at = NOW()
+        WHERE up.course_id = $1`,
+      [id],
+    );
+
     res.json({ videos: inserted });
   } catch (e) {
     console.error(e);

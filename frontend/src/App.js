@@ -26,6 +26,7 @@ import AdminActivity from './pages/admin/ActivityPage';
 import AdminLeaderboard from './pages/admin/Leaderboard';
 import AdminLeaderboardUser from './pages/admin/Leaderboarduser';
 import AdminUsers from './pages/admin/Users'; // new
+import CompanySettings from './pages/admin/CompanySettings';
 
 export default function App() {
   const { user } = useAuth();
@@ -166,6 +167,14 @@ export default function App() {
           element={
             <ProtectedRoute role="admin">
               <BrandSettings />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/:company_slug/admin/company-settings"
+          element={
+            <ProtectedRoute role="admin">
+              <CompanySettings />
             </ProtectedRoute>
           }
         />

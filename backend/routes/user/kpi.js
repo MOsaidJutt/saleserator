@@ -2,6 +2,8 @@
 const express = require('express');
 const pool = require('../../db');
 const { auth } = require('../../middleware/auth');
+const { broadcast } = require('../../utils/tvEvents');
+const { updateUserRank } = require('../../utils/updateUserRank');
 const router = express.Router();
 
 const VIDEO_COMPLETION_POINTS = 5;
@@ -305,29 +307,65 @@ router.post('/track/video', auth, async (req, res) => {
     );
     const definitiveCompleted = sel.rows?.[0]?.completed === true;
 
+    // Fetch user name once — used in broadcasts so TV shows real name
+    const nameQ = await pool.query(
+      `SELECT name FROM users WHERE user_id = $1`,
+      [userId],
+    );
+    const userName = nameQ.rows?.[0]?.name || 'Unknown';
+
     if (definitiveCompleted) {
-      await pool.query(
+      // Use RETURNING to detect if this is a genuine first-time insert
+      const videoInsert = await pool.query(
         `INSERT INTO activities (user_id, activity_type, points, value, date_logged, category_id)
          SELECT $1, 'video_completed', $2, $3, NOW(), $4
          WHERE NOT EXISTS (
            SELECT 1 FROM activities
            WHERE user_id = $1 AND activity_type = 'video_completed' AND value = $3
-         )`,
+         )
+         RETURNING activity_id`,
         [userId, VIDEO_COMPLETION_POINTS, assetId, 3],
       );
+      // Only broadcast if a row was actually inserted (first time only)
+      if (videoInsert.rowCount > 0) {
+        broadcast('activity_logged', {
+          userId,
+          userName,
+          activityType: 'video_completed',
+          points: VIDEO_COMPLETION_POINTS,
+          ts: new Date().toISOString(),
+        });
+      }
     }
 
     if (percent >= 100 && prevPercent < 100) {
-      await pool.query(
+      // Use RETURNING to detect if this is a genuine first-time insert
+      const courseInsert = await pool.query(
         `INSERT INTO activities (user_id, activity_type, points, value, date_logged, category_id)
          SELECT $1, 'course_completed', $2, $3, NOW(), $4
          WHERE NOT EXISTS (
            SELECT 1 FROM activities
            WHERE user_id = $1 AND activity_type = 'course_completed' AND value = $3
-         )`,
+         )
+         RETURNING activity_id`,
         [userId, COURSE_COMPLETION_POINTS, courseId, 3],
       );
+      // Only broadcast if a row was actually inserted (first time only)
+      if (courseInsert.rowCount > 0) {
+        broadcast('activity_logged', {
+          userId,
+          userName,
+          activityType: 'course_completed',
+          points: COURSE_COMPLETION_POINTS,
+          ts: new Date().toISOString(),
+        });
+      }
     }
+
+    // Update rank after video/course completion points are awarded
+    await updateUserRank(userId, company_id).catch((err) =>
+      console.error('updateUserRank failed in kpi.js:', err)
+    );
 
     let nextCourse = null;
     if (!row.next_video_id) {

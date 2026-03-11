@@ -451,6 +451,163 @@
   margin-bottom: 0.75rem;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   VIDEO WATCH — Completion Popups
+   Add these to the bottom of VideoWatch.css
+───────────────────────────────────────────────────────────── */
+
+/* Reuse ml-popup-layer + ml-sp-popup from ActivityForm.css
+   (already imported via useruistyles) — no changes needed there */
+
+/* ── Video complete toast (bottom-right) ── */
+.vw-vc-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #0f172a;
+  border: 1px solid #00c1de;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  box-shadow: 0 0 24px rgba(0, 193, 222, 0.3);
+  animation: vw-toast-in 0.3s ease forwards;
+}
+
+.vw-vc-toast__icon {
+  font-size: 1.4rem;
+  color: #00c1de;
+  line-height: 1;
+}
+
+.vw-vc-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.vw-vc-toast__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.03em;
+}
+
+.vw-vc-toast__pts {
+  font-size: 0.85rem;
+  color: #00c1de;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+@keyframes vw-toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Course complete overlay (full screen centered) ── */
+.vw-cc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  animation: vw-fade-in 0.25s ease forwards;
+}
+
+.vw-cc-card {
+  position: relative;
+  background: #0f172a;
+  border: 1px solid #22c55e;
+  border-radius: 20px;
+  padding: 2.5rem 3rem;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(34, 197, 94, 0.35);
+  animation: vw-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  min-width: 320px;
+  max-width: 440px;
+}
+
+.vw-cc-emoji {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.vw-cc-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #22c55e;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.vw-cc-sub {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.vw-cc-sub strong {
+  color: #fff;
+}
+
+.vw-cc-pts {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.vw-cc-foot {
+  font-size: 0.8rem;
+  color: #475569;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Confetti ── */
+.vw-confetti-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1400;
+  overflow: hidden;
+}
+
+.vw-confetti-piece {
+  position: absolute;
+  top: -10px;
+  border-radius: 2px;
+  animation: vw-confetti-fall linear forwards;
+}
+
+@keyframes vw-confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes vw-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes vw-pop-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 /* ===========================
    Responsive
    =========================== */

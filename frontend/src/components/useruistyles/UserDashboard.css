@@ -573,3 +573,76 @@ section > h3{
   opacity: .82;
   transform: translateY(-1px);
 }
+/* ─────────────────────────────────────────────────────────────
+   RANK DISPLAY — Add to bottom of UserDashboard.css
+───────────────────────────────────────────────────────────── */
+
+.welcome-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.welcome-banner__left h2 {
+  margin: 0 0 0.25rem;
+}
+
+.welcome-banner__left p {
+  margin: 0;
+  opacity: 0.7;
+}
+
+.welcome-banner__rank {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 220px;
+}
+
+.rank-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
+}
+
+.rank-badge-pill {
+  display: inline-block;
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.rank-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rank-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rank-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00c1de, #3b82f6);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.rank-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  opacity: 0.55;
+}

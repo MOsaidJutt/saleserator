@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import api from '../../api';
 import Nav from '../../components/Navbar';
@@ -6,8 +6,62 @@ import VideoPlayer from '../../components/VideoPlayer';
 import '../../components/useruistyles/VideoWatch.css';
 import { useAuth } from '../../context/AuthContext';
 
+// ─── SP Icon (same as ActivityForm) ───────────────────────────────
+function SPIcon({ size = 16, color = '#00c1de' }) {
+  const w = size;
+  const h = Math.round(size * 1.2);
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox="0 0 100 120"
+      fill="none"
+      aria-hidden="true"
+      style={{ display: 'inline-block', verticalAlign: 'middle' }}
+    >
+      <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill={color} />
+      <path
+        d="M50 25 C35 25 30 30 30 40 C30 50 35 52 45 55 C52 57 55 58 55 63 C55 68 52 70 45 70 C38 70 35 68 32 65 L25 75 C30 80 37 82 45 82 C58 82 67 77 67 63 C67 50 60 48 50 45 C43 43 42 42 42 38 C42 34 45 32 50 32 C55 32 58 34 60 37 L68 28 C63 23 57 25 50 25 Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
+// ─── Confetti burst ────────────────────────────────────────────────
+function ConfettiBurst() {
+  const colors = ['#00c1de', '#ff3b3b', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7'];
+  const pieces = Array.from({ length: 48 }, (_, i) => {
+    const color = colors[i % colors.length];
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.5;
+    const duration = 1.2 + Math.random() * 0.8;
+    const size = 6 + Math.random() * 8;
+    return { color, left, delay, duration, size, id: i };
+  });
+
+  return (
+    <div className="vw-confetti-layer" aria-hidden="true">
+      {pieces.map((p) => (
+        <div
+          key={p.id}
+          className="vw-confetti-piece"
+          style={{
+            left: `${p.left}%`,
+            background: p.color,
+            width: p.size,
+            height: p.size,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function VideoWatch() {
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   const slug = user?.company_slug;
 
   const { courseId, assetId } = useParams();
@@ -26,7 +80,7 @@ export default function VideoWatch() {
     totalTimeSpent: 0,
     nextVideoId: null,
     nextCourse: null,
-    perVideo: {}, // { [assetId]: { lastPosition, duration_seconds, completed } }
+    perVideo: {},
   });
 
   const [videos, setVideos] = useState([]);
@@ -34,46 +88,79 @@ export default function VideoWatch() {
   const [collapsed, setCollapsed] = useState(false);
   const videoRef = useRef(null);
 
-  // Helper to coerce serialized booleans safely
-  const isTrue = (v) => v === true || v === 'true' || v === 1 || v === '1';
+  // ─── Popup state ───────────────────────────────────────────────
+  const [spPopups, setSpPopups] = useState([]);
+  const popupIdRef = useRef(1);
 
-  // Load course + videos + current selection
+  // Video complete — small centered toast
+  const [videoCompletePopup, setVideoCompletePopup] = useState(null); // { pts }
+  const videoTimerRef = useRef(null);
+
+  // Course complete — big overlay with confetti
+  const [courseCompletePopup, setCourseCompletePopup] = useState(null); // { pts }
+  const courseTimerRef = useRef(null);
+
+  // Track which asset IDs and course we've already shown popups for
+  const shownVideoIds = useRef(new Set());
+  const shownCourseComplete = useRef(false);
+
+  const VIDEO_PTS = 5;
+  const COURSE_PTS = 50;
+
+  const spawnSpPopup = useCallback((pts, color = '#00c1de') => {
+    const id = `${Date.now()}-${popupIdRef.current++}`;
+    // spawn near center of player
+    const x = window.innerWidth * 0.35;
+    const y = window.innerHeight * 0.4;
+    setSpPopups((prev) => [...prev, { id, x, y, pts, color }]);
+    window.setTimeout(() => {
+      setSpPopups((prev) => prev.filter((p) => p.id !== id));
+    }, 1400);
+  }, []);
+
+  const showVideoComplete = useCallback((pts) => {
+    setVideoCompletePopup({ pts });
+    if (videoTimerRef.current) window.clearTimeout(videoTimerRef.current);
+    videoTimerRef.current = window.setTimeout(() => setVideoCompletePopup(null), 2400);
+    spawnSpPopup(pts, '#00c1de');
+  }, [spawnSpPopup]);
+
+  const showCourseComplete = useCallback((pts) => {
+    setCourseCompletePopup({ pts });
+    if (courseTimerRef.current) window.clearTimeout(courseTimerRef.current);
+    courseTimerRef.current = window.setTimeout(() => setCourseCompletePopup(null), 4000);
+    spawnSpPopup(pts, '#22c55e');
+  }, [spawnSpPopup]);
+
+  // ─── Load course + videos ──────────────────────────────────────
   useEffect(() => {
     let on = true;
     (async () => {
       try {
         const res = await api.get(`/users/courses/detail/${courseId}`);
         if (!on) return;
-
         const data = res.data;
         setCourseTitle(data?.course?.title || 'Course');
         const vids = Array.isArray(data?.videos) ? data.videos : [];
         setVideos(vids);
-
-        const current =
-          vids.find((v) => String(v.id) === String(assetId)) || vids[0];
+        const current = vids.find((v) => String(v.id) === String(assetId)) || vids[0];
         setFileName(current?.file_name || 'Video');
         setCurrentVideo(current);
       } catch (e) {
         if (!on) return;
-        console.error('Failed to load course details', e);
         setError('Failed to load video metadata.');
       }
     })();
-    return () => {
-      on = false;
-    };
+    return () => { on = false; };
   }, [courseId, assetId]);
 
-  // Seed aggregates immediately from /kpi/progress
+  // ─── Seed KPI from /kpi/progress ──────────────────────────────
   useEffect(() => {
     if (!courseId) return;
     let on = true;
     (async () => {
       try {
-        const res = await api.get(`/users/kpi/progress`, {
-          params: { courseId, assetId },
-        });
+        const res = await api.get(`/users/kpi/progress`, { params: { courseId, assetId } });
         if (!on) return;
 
         const percent = Number(res?.data?.percent ?? 0);
@@ -81,9 +168,7 @@ export default function VideoWatch() {
         const nextVideoId = res?.data?.nextVideoId || null;
         const nextCourse = res?.data?.nextCourse || null;
 
-        const perVideoArr = Array.isArray(res?.data?.perVideo)
-          ? res.data.perVideo
-          : [];
+        const perVideoArr = Array.isArray(res?.data?.perVideo) ? res.data.perVideo : [];
         const perVideoMap = {};
         for (const pv of perVideoArr) {
           if (pv?.asset_id != null) {
@@ -92,27 +177,28 @@ export default function VideoWatch() {
               duration_seconds: pv.duration_seconds ?? 0,
               completed: !!pv.completed,
             };
+            // Pre-mark already completed videos so we don't re-popup them
+            if (pv.completed) shownVideoIds.current.add(pv.asset_id);
           }
         }
+
+        // Pre-mark course if already complete
+        if (percent >= 100) shownCourseComplete.current = true;
 
         setKpi((prev) => ({
           ...prev,
           percent: Number.isFinite(percent) ? percent : prev.percent,
-          totalTimeSpent: Number.isFinite(watchedSeconds)
-            ? watchedSeconds
-            : prev.totalTimeSpent,
+          totalTimeSpent: Number.isFinite(watchedSeconds) ? watchedSeconds : prev.totalTimeSpent,
           nextVideoId,
           nextCourse,
           perVideo: perVideoMap,
         }));
-      } catch (error) {
-        //es-lint-disable-no-empty
-      }
+      } catch {}
     })();
-    return () => {
-      on = false;
-    };
+    return () => { on = false; };
   }, [courseId, assetId]);
+
+  const isTrue = (v) => v === true || v === 'true' || v === 1 || v === '1';
 
   const onSelectVideo = (vId) => {
     const nextVideo = videos.find((v) => v.id === vId);
@@ -125,11 +211,11 @@ export default function VideoWatch() {
 
   const clampPct = (n) => Math.max(0, Math.min(100, n || 0));
 
-  // Compute visibility of "nextCourse" safely (covers string/number booleans)
   const nc = kpi?.nextCourse;
-  const isHidden = isTrue(nc?.hidden); // hidden if true/'true'/1/'1'
+  const isHidden = isTrue(nc?.hidden);
   const canShowNextCourse = !!(nc && !isHidden);
 
+  // ─── applyTimePatch — detect completions and fire popups ──────
   function applyTimePatch(prev, patch) {
     const next = { ...prev, ...patch };
 
@@ -151,9 +237,23 @@ export default function VideoWatch() {
             duration_seconds: pv.duration_seconds ?? 0,
             completed: !!pv.completed,
           };
+
+          // Fire video complete popup — only once per asset
+          if (pv.completed && !shownVideoIds.current.has(pv.asset_id)) {
+            shownVideoIds.current.add(pv.asset_id);
+            showVideoComplete(VIDEO_PTS);
+          }
         }
       }
       next.perVideo = map;
+    }
+
+    // Fire course complete popup — only once
+    const newPercent = Number(patch.percent ?? next.percent ?? 0);
+    const prevPercent = Number(prev.percent ?? 0);
+    if (newPercent >= 100 && prevPercent < 100 && !shownCourseComplete.current) {
+      shownCourseComplete.current = true;
+      showCourseComplete(COURSE_PTS);
     }
 
     delete next.watchedSeconds;
@@ -177,17 +277,61 @@ export default function VideoWatch() {
   return (
     <div>
       <Nav />
+
+      {/* ── SP floating popups ─────────────────────────────────── */}
+      <div className="ml-popup-layer" aria-hidden="true">
+        {spPopups.map((p) => (
+          <div
+            key={p.id}
+            className="ml-sp-popup"
+            style={{ left: p.x, top: p.y, color: p.color }}
+          >
+            <span className="ml-sp-popup-points">+{p.pts}</span>
+            <SPIcon size={34} color={p.color} />
+          </div>
+        ))}
+      </div>
+
+      {/* ── Video complete toast ───────────────────────────────── */}
+      {videoCompletePopup && (
+        <div className="vw-vc-toast" aria-live="polite">
+          <div className="vw-vc-toast__icon">✓</div>
+          <div className="vw-vc-toast__text">
+            <span className="vw-vc-toast__title">Video Complete!</span>
+            <span className="vw-vc-toast__pts">
+              +{videoCompletePopup.pts} <SPIcon size={14} color="#00c1de" />
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Course complete overlay ────────────────────────────── */}
+      {courseCompletePopup && (
+        <div className="vw-cc-overlay" aria-live="polite">
+          <ConfettiBurst />
+          <div className="vw-cc-card">
+            <div className="vw-cc-burst" aria-hidden="true" />
+            <div className="vw-cc-emoji">🏆</div>
+            <div className="vw-cc-title">Course Complete!</div>
+            <div className="vw-cc-sub">
+              You finished <strong>{courseTitle}</strong>
+            </div>
+            <div className="vw-cc-pts">
+              +{courseCompletePopup.pts} <SPIcon size={22} color="#22c55e" />
+            </div>
+            <div className="vw-cc-foot">Keep pushing. Next course awaits.</div>
+          </div>
+        </div>
+      )}
+
       <div className="vw-wrap">
-        {/* Header (cap + back on the right) */}
+        {/* Header */}
         <div className="vw-header">
           <div className="vw-header-cap">
             <div className="vw-course">Course: {courseTitle || 'Course'}</div>
             <Link
               to="#"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(-1);
-              }}
+              onClick={(e) => { e.preventDefault(); navigate(-1); }}
               className="vw-back"
             >
               <span aria-hidden>←</span> Back
@@ -223,7 +367,7 @@ export default function VideoWatch() {
             </div>
           </div>
 
-          {/* RIGHT: Overview + Next recommended */}
+          {/* RIGHT: Overview */}
           <aside className="vw-right">
             <div className="vw-panel">
               <h3>Progress Overview</h3>
@@ -253,14 +397,13 @@ export default function VideoWatch() {
                     className="vw-next-btn"
                     onClick={() => onSelectVideo(kpi.nextVideoId)}
                   >
-                    {videos.find((v) => v.id === kpi.nextVideoId)?.file_name ||
-                      'Next Video'}
+                    {videos.find((v) => v.id === kpi.nextVideoId)?.file_name || 'Next Video'}
                   </button>
                 </>
               ) : (
                 canShowNextCourse && (
                   <>
-                    <h4>Next Course in “{nc.category}”</h4>
+                    <h4>Next Course in "{nc.category}"</h4>
                     <div className="vw-next-course">
                       <div className="vw-next-course__title">{nc.title}</div>
                       <div className="vw-next-course__meta">
@@ -280,9 +423,7 @@ export default function VideoWatch() {
           </aside>
 
           {/* FULL-WIDTH PLAYLIST */}
-          <div
-            className={`vw-playlist vw-playlist--full ${collapsed ? '' : 'is-collapsed'}`}
-          >
+          <div className={`vw-playlist vw-playlist--full ${collapsed ? '' : 'is-collapsed'}`}>
             <div className="vw-playlist__head">
               <h3>Video List</h3>
               <button
@@ -301,11 +442,7 @@ export default function VideoWatch() {
               {videos.map((v) => {
                 const pv = kpi?.perVideo?.[v.id] || {};
                 const pct = v.duration_seconds
-                  ? clampPct(
-                      Math.round(
-                        ((pv.lastPosition || 0) / v.duration_seconds) * 100,
-                      ),
-                    )
+                  ? clampPct(Math.round(((pv.lastPosition || 0) / v.duration_seconds) * 100))
                   : 0;
                 const isActive = String(v.id) === String(currentVideo?.id);
                 return (

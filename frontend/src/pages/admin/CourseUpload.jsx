@@ -6,7 +6,6 @@ import Nav from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import '../../components/adminuistyles/CourseForm.css';
 
-/** Helper: format seconds as h/m/s, e.g. 1h 12m / 3m 40s / 42s */
 function fmt(sec = 0) {
   sec = Math.max(0, Math.floor(sec));
   const h = Math.floor(sec / 3600);
@@ -17,38 +16,17 @@ function fmt(sec = 0) {
   return `${s}s`;
 }
 
-/** Measure duration from a local File using an off-DOM <video> element */
 function getVideoDurationFromFile(file) {
   return new Promise((resolve, reject) => {
     try {
       const video = document.createElement('video');
       video.preload = 'metadata';
       const url = URL.createObjectURL(file);
-
-      const cleanup = () => {
-        try {
-          URL.revokeObjectURL(url);
-        } catch {
-          ('empty');
-        }
-      };
-
-      const onLoaded = () => {
-        const d = Math.round(video.duration || 0);
-        cleanup();
-        resolve(d);
-      };
-      const onError = (err) => {
-        cleanup();
-        reject(err || new Error('Failed to read video metadata'));
-      };
-
-      video.onloadedmetadata = onLoaded;
-      video.onerror = onError;
+      const cleanup = () => { try { URL.revokeObjectURL(url); } catch { (''); } };
+      video.onloadedmetadata = () => { const d = Math.round(video.duration || 0); cleanup(); resolve(d); };
+      video.onerror = (err) => { cleanup(); reject(err || new Error('Failed to read video metadata')); };
       video.src = url;
-    } catch (e) {
-      reject(e);
-    }
+    } catch (e) { reject(e); }
   });
 }
 
@@ -62,13 +40,11 @@ export default function AdminCourseUpload() {
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState(0);
 
-  const [file, setFile] = useState(null);
-  const [duration, setDuration] = useState(null);
-  const [durationState, setDurationState] = useState('idle');
+  // Multiple files — each entry: { file, duration, durationState, progress, status }
+  const [fileItems, setFileItems] = useState([]);
 
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const toggleCreate = () => setIsCreateOpen((v) => !v);
@@ -76,38 +52,59 @@ export default function AdminCourseUpload() {
   const fileInputRef = useRef(null);
   const [rowBusy, setRowBusy] = useState(null);
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  useEffect(() => { fetchCourses(); }, []);
 
   const fetchCourses = async () => {
     try {
       const res = await api.get('/admin/courses');
-      // backend already returns hidden boolean
       setCourses(res.data || []);
     } catch (err) {
       console.error('Error fetching courses:', err);
     }
   };
 
-  // Ensure we always have duration before submit when a file is chosen
-  async function ensureDurationMeasured(selFile) {
-    if (!selFile) return null;
-    if (Number.isFinite(duration) && duration > 0) return duration;
+  const handleFileChange = async (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
 
-    setDurationState('measuring');
-    try {
-      const d = await getVideoDurationFromFile(selFile);
-      const safe = Math.max(0, Math.floor(d || 0));
-      setDuration(safe);
-      setDurationState('ready');
-      return safe;
-    } catch (e) {
-      console.warn('Video duration measurement failed:', e);
-      setDurationState('error');
-      return null;
-    }
-  }
+    // Build initial items with measuring state
+    const initial = selected.map((file) => ({
+      file,
+      duration: null,
+      durationState: 'measuring',
+      progress: 0,
+      status: 'pending', // pending | uploading | done | error
+    }));
+    setFileItems((prev) => [...prev, ...initial]);
+
+    // Measure durations in parallel
+    selected.forEach(async (file, i) => {
+      const idx = fileItems.length + i; // index in the new array
+      try {
+        const d = await getVideoDurationFromFile(file);
+        setFileItems((prev) =>
+          prev.map((item, j) =>
+            j === idx
+              ? { ...item, duration: Math.round(d || 0), durationState: 'ready' }
+              : item
+          )
+        );
+      } catch {
+        setFileItems((prev) =>
+          prev.map((item, j) =>
+            j === idx ? { ...item, durationState: 'error' } : item
+          )
+        );
+      }
+    });
+
+    // Reset input so same files can be re-selected if needed
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (idx) => {
+    setFileItems((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -118,61 +115,74 @@ export default function AdminCourseUpload() {
 
       if (editingCourse) {
         await api.patch(`/admin/courses/${editingCourse.id}`, {
-          title,
-          category,
-          points: Number(points) || 0,
-          description,
+          title, category, points: Number(points) || 0, description,
         });
       } else {
         const createRes = await api.post('/admin/courses', {
-          title,
-          category,
-          points: Number(points) || 0,
-          hidden: false, // new courses visible by default
-          storage_provider: 's3',
-          media_type: 'video',
-          description,
+          title, category, points: Number(points) || 0,
+          hidden: false, storage_provider: 's3', media_type: 'video', description,
         });
 
         const courseId = createRes.data.id;
+        setCreating(false);
 
-        if (file) {
-          let durationSec = await ensureDurationMeasured(file);
-          const contentType = file.type || 'video/mp4';
-          const fileExt = (file.name.split('.').pop() || 'mp4').toLowerCase();
-
-          const presignRes = await api.post('/admin/uploads/presign', {
-            course_id: courseId,
-            contentType,
-            fileExt,
-          });
-
-          const { uploadUrl, s3Key } = presignRes.data;
-
+        if (fileItems.length > 0) {
           setUploading(true);
-          setProgress(0);
-          await s3PlainAxios.put(uploadUrl, file, {
-            headers: { 'Content-Type': contentType },
-            onUploadProgress: (evt) => {
-              if (!evt.total) return;
-              setProgress(Math.round((evt.loaded / evt.total) * 100));
-            },
-          });
 
-          await api.post(`/admin/courses/${courseId}/assets`, {
-            s3_key: s3Key,
-            kind: 'video',
-            mime_type: contentType,
-            size_bytes: file.size,
-            duration_seconds: Number.isFinite(durationSec) ? durationSec : null,
-            is_default: true,
-            file_name: file.name,
-          });
+          for (let idx = 0; idx < fileItems.length; idx++) {
+            const item = fileItems[idx];
+            const { file } = item;
+
+            // Mark as uploading
+            setFileItems((prev) =>
+              prev.map((it, i) => i === idx ? { ...it, status: 'uploading' } : it)
+            );
+
+            try {
+              const contentType = file.type || 'video/mp4';
+              const fileExt = (file.name.split('.').pop() || 'mp4').toLowerCase();
+
+              const presignRes = await api.post('/admin/uploads/presign', {
+                course_id: courseId, contentType, fileExt,
+              });
+              const { uploadUrl, s3Key } = presignRes.data;
+
+              await s3PlainAxios.put(uploadUrl, file, {
+                headers: { 'Content-Type': contentType },
+                onUploadProgress: (evt) => {
+                  if (!evt.total) return;
+                  const pct = Math.round((evt.loaded / evt.total) * 100);
+                  setFileItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, progress: pct } : it)
+                  );
+                },
+              });
+
+              await api.post(`/admin/courses/${courseId}/assets`, {
+                s3_key: s3Key,
+                kind: 'video',
+                mime_type: contentType,
+                size_bytes: file.size,
+                duration_seconds: Number.isFinite(item.duration) ? item.duration : null,
+                is_default: idx === 0, // first video is default
+                file_name: file.name,
+              });
+
+              setFileItems((prev) =>
+                prev.map((it, i) => i === idx ? { ...it, status: 'done', progress: 100 } : it)
+              );
+            } catch (err) {
+              setFileItems((prev) =>
+                prev.map((it, i) => i === idx ? { ...it, status: 'error' } : it)
+              );
+              console.error(`Failed to upload ${file.name}:`, err);
+            }
+          }
+
+          setUploading(false);
         }
       }
 
-      setUploading(false);
-      setProgress(100);
       setCreating(false);
       alert('Course saved successfully!');
 
@@ -180,11 +190,8 @@ export default function AdminCourseUpload() {
       setCategory('');
       setDescription('');
       setPoints(0);
-      setFile(null);
-      setDuration(null);
-      setDurationState('idle');
+      setFileItems([]);
       setEditingCourse(null);
-      setProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
       setIsCreateOpen(false);
 
@@ -192,11 +199,7 @@ export default function AdminCourseUpload() {
     } catch (err) {
       setCreating(false);
       setUploading(false);
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        'Upload failed';
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Upload failed';
       console.error('Error:', err);
       alert(msg);
     }
@@ -215,7 +218,6 @@ export default function AdminCourseUpload() {
     }
   };
 
-  // Hide/Unhide toggle using actual hidden column
   const handleToggleVisibility = async (course) => {
     try {
       setRowBusy(course.id);
@@ -227,39 +229,14 @@ export default function AdminCourseUpload() {
       await fetchCourses();
     } catch (err) {
       console.error('Error toggling visibility:', err);
-      alert(
-        `Failed to ${course.hidden ? 'unhide' : 'hide'} course: ${
-          err.message || 'Unknown error'
-        }`,
-      );
+      alert(`Failed to ${course.hidden ? 'unhide' : 'hide'} course: ${err.message || 'Unknown error'}`);
     } finally {
       setRowBusy(null);
     }
   };
 
-  const handleFileChange = async (e) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setProgress(0);
-      setDuration(null);
-      setDurationState('measuring');
-      try {
-        const d = await getVideoDurationFromFile(selectedFile);
-        setDuration(Math.round(d || 0));
-        setDurationState('ready');
-      } catch (err) {
-        console.warn('Failed to read duration:', err);
-        setDuration(null);
-        setDurationState('error');
-      }
-    } else {
-      setFile(null);
-      setDuration(null);
-      setDurationState('idle');
-      setProgress(0);
-    }
-  };
+  const allDone = fileItems.length > 0 && fileItems.every((f) => f.status === 'done');
+  const anyUploading = fileItems.some((f) => f.status === 'uploading');
 
   return (
     <div>
@@ -268,7 +245,6 @@ export default function AdminCourseUpload() {
         Courses
       </h2>
 
-      {/* Collapsible: Create New Course */}
       <section
         id="createCourse"
         className={`course-form-collapsible ${isCreateOpen ? 'is-open' : ''}`}
@@ -281,21 +257,8 @@ export default function AdminCourseUpload() {
           aria-controls="createCourseContent"
         >
           <span>Create a New Course</span>
-          <svg
-            className="chevron"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 9l6 6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+          <svg className="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
 
@@ -313,7 +276,6 @@ export default function AdminCourseUpload() {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="label">Category</label>
                   <input
@@ -347,48 +309,71 @@ export default function AdminCourseUpload() {
                 </div>
 
                 <div>
-                  <label className="label">Video file</label>
+                  <label className="label">
+                    Video files
+                    <span style={{ opacity: 0.5, fontWeight: 400, marginLeft: '0.4rem', fontSize: '0.8rem' }}>
+                      (select multiple)
+                    </span>
+                  </label>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="video/*"
+                    multiple
                     className="input-field"
                     onChange={handleFileChange}
+                    disabled={uploading}
                   />
-
-                  {file && (
-                    <div className="file-name">
-                      {file.name} ({Math.round(file.size / 1024 / 1024)} MB)
-                      {durationState === 'ready' && duration > 0 && (
-                        <> · {fmt(duration)}</>
-                      )}
-                      {durationState === 'measuring' && <> · measuring…</>}
-                      {durationState === 'error' && (
-                        <> · duration unavailable</>
-                      )}
-                    </div>
-                  )}
-
-                  {file && (
-                    <div className="file-upload-progress">
-                      <div className="file-item">
-                        <div className="progress-bar-container">
-                          <div
-                            className={`progress-bar ${
-                              progress < 30
-                                ? 'progress-red'
-                                : progress < 70
-                                  ? 'progress-yellow'
-                                  : 'progress-green'
-                            }`}
-                            style={{ width: `${progress}%` || 0 }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
+
+              {/* File list with individual progress bars */}
+              {fileItems.length > 0 && (
+                <div className="file-upload-progress" style={{ marginTop: '0.75rem' }}>
+                  {fileItems.map((item, idx) => (
+                    <div key={idx} className="file-item" style={{ marginBottom: '0.6rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <span style={{ fontSize: '0.85rem', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                          {item.file.name}
+                          {' '}
+                          <span style={{ opacity: 0.5 }}>
+                            ({Math.round(item.file.size / 1024 / 1024)} MB
+                            {item.durationState === 'ready' && item.duration > 0 && ` · ${fmt(item.duration)}`}
+                            {item.durationState === 'measuring' && ' · measuring…'}
+                            )
+                          </span>
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {item.status === 'done' && <span style={{ color: '#22c55e', fontSize: '0.8rem' }}>✓ Done</span>}
+                          {item.status === 'error' && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>✗ Failed</span>}
+                          {item.status === 'uploading' && <span style={{ opacity: 0.6, fontSize: '0.8rem' }}>{item.progress}%</span>}
+                          {item.status === 'pending' && !uploading && (
+                            <button
+                              type="button"
+                              onClick={() => removeFile(idx)}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 0.25rem' }}
+                            >
+                              ✕ Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="progress-bar-container">
+                        <div
+                          className={`progress-bar ${
+                            item.status === 'error' ? 'progress-red' :
+                            item.status === 'done' ? 'progress-green' :
+                            item.progress < 30 ? 'progress-red' :
+                            item.progress < 70 ? 'progress-yellow' :
+                            'progress-green'
+                          }`}
+                          style={{ width: `${item.status === 'done' ? 100 : item.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -396,9 +381,9 @@ export default function AdminCourseUpload() {
                 className="submit-btn"
               >
                 {creating
-                  ? 'Saving...'
+                  ? 'Creating course...'
                   : uploading
-                    ? `Uploading ${progress}%`
+                    ? `Uploading videos...`
                     : editingCourse
                       ? 'Update Course'
                       : 'Create & Upload'}
@@ -419,40 +404,26 @@ export default function AdminCourseUpload() {
                   <div>
                     <div className="course-card-title">
                       {course.hidden && (
-                        <span className="hidden-pill" title="Hidden from users">
-                          Hidden
-                        </span>
+                        <span className="hidden-pill" title="Hidden from users">Hidden</span>
                       )}
                       {course.title}
                     </div>
                     <div className="course-card-sub">
-                      {course.category || 'Uncategorized'} ·{' '}
-                      {course.points ?? 0} pts
+                      {course.category || 'Uncategorized'} · {course.points ?? 0} pts
                     </div>
                   </div>
                   <div className="course-card-actions">
-                    <Link
-                      to={`/${slug}/admin/courses/${course.id}/edit`}
-                      className="course-item-btn"
-                    >
+                    <Link to={`/${slug}/admin/courses/${course.id}/edit`} className="course-item-btn">
                       Edit
                     </Link>
-
-                    {/* Hide / Unhide */}
                     <button
                       onClick={() => handleToggleVisibility(course)}
                       className="course-item-btn"
                       type="button"
                       disabled={rowBusy === course.id}
-                      title={course.hidden ? 'Unhide course' : 'Hide course'}
                     >
-                      {rowBusy === course.id
-                        ? 'Working...'
-                        : course.hidden
-                          ? 'Unhide'
-                          : 'Hide'}
+                      {rowBusy === course.id ? 'Working...' : course.hidden ? 'Unhide' : 'Hide'}
                     </button>
-
                     <button
                       onClick={() => handleDelete(course.id)}
                       className="delete-btn"

@@ -44,6 +44,7 @@ router.post(
   async (req, res) => {
     const { activityType, value, categoryId, dateLogged } = req.body;
     const userId = req.user.id;
+    const company_id = req.user.company_id;
 
     try {
       const normalizedType = normalizeInboundType(activityType);
@@ -53,9 +54,10 @@ router.post(
         SELECT points_per_unit
         FROM activity_point_rules
         WHERE activity_type = $1
+          AND company_id = $2
           AND is_active = TRUE
         `,
-        [normalizedType]
+        [normalizedType, company_id]
       );
 
       if (!ruleRows.length) {
@@ -101,7 +103,7 @@ router.post(
       });
 
       // Update rank
-      const rankInfo = await updateUserRank(userId).catch(() => null);
+      const rankInfo = await updateUserRank(userId, company_id).catch(() => null);
 
       // Broadcast events
       broadcast('activity_logged', {
@@ -202,23 +204,31 @@ router.get('/recent', auth, async (req, res) => {
   }
 });
 
-router.get('/rules', auth, async (_req, res) => {
+router.get('/rules', auth, async (req, res) => {
+  const company_id = req.user.company_id;
+
   const { rows } = await pool.query(
     `SELECT activity_type, points_per_unit, sort_order
        FROM activity_point_rules
       WHERE is_active = TRUE
-      ORDER BY sort_order, activity_type`
+        AND company_id = $1
+      ORDER BY sort_order, activity_type`,
+    [company_id]
   );
 
   res.json({ items: rows });
 });
 
-router.get('/weights', auth, async (_req, res) => {
+router.get('/weights', auth, async (req, res) => {
+  const company_id = req.user.company_id;
+
   const { rows } = await pool.query(
     `SELECT activity_type, points_per_unit
        FROM activity_point_rules
       WHERE is_active = TRUE
-      ORDER BY sort_order, activity_type`
+        AND company_id = $1
+      ORDER BY sort_order, activity_type`,
+    [company_id]
   );
 
   const map = {};

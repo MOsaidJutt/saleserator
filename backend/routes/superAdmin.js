@@ -52,6 +52,11 @@ router.post("/create-company", async (req, res) => {
       [name.trim(), slug, logo_url || null, tagline || null]
     );
 
+    const newCompanyId = newCompany.rows[0].company_id;
+
+    // Seed default rank rules and activity point rules for the new company
+    await pool.query('SELECT seed_company_defaults($1)', [newCompanyId]);
+
     res.status(201).json({
       message: `Company "${name}" created successfully`,
       company: newCompany.rows[0],
