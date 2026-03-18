@@ -105,9 +105,15 @@ router.post(
       // Update rank
       const rankInfo = await updateUserRank(userId, company_id).catch(() => null);
 
+      // Fetch user name for TV broadcast
+      const nameQ = await pool.query('SELECT name FROM users WHERE user_id = $1', [userId]);
+      const userName = nameQ.rows?.[0]?.name || 'Unknown';
+
       // Broadcast events
       broadcast('activity_logged', {
+        company_id,
         userId,
+        userName,
         activityType: normalizedType,
         categoryId,
         points,
@@ -116,7 +122,9 @@ router.post(
 
       if (normalizedType === 'Deals') {
         broadcast('deal_closed', {
+          company_id,
           userId,
+          userName,
           points,
           ts: new Date().toISOString(),
         });

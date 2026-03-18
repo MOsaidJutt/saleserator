@@ -1,415 +1,242 @@
-/* =======================================================
-   SALESERATOR — Leaderboard (Theme Matched)
-   Navy #121826 + Cyan #00c1de | Dark glass + premium cap + podium glow
-   (fully namespaced: .lb-*)
-   ======================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-:root{
-  --lb-bg0:#050814;
-  --lb-bg1:#020617;
-
-  --lb-navy:#121826;
-  --lb-cyan:#00c1de;
-  --lb-cyan2:#38bdf8;
-
-  --lb-ink: rgba(232,241,255,.92);
-  --lb-muted: rgba(200,215,255,.72);
-
-  --lb-border: rgba(0,193,222,.14);
-  --lb-borderSoft: rgba(255,255,255,.06);
-
-  --lb-panelA: rgba(8,12,28,.94);
-  --lb-panelB: rgba(6,10,22,.92);
-
-  --lb-rowA: rgba(6,10,22,.92);
-  --lb-rowB: rgba(5,8,18,.94);
-
-  --lb-shadow: 0 28px 80px rgba(0,0,0,.82);
-  --lb-shadowSoft: 0 14px 40px rgba(0,0,0,.62);
-
-  --lb-r: 24px;
-  --lb-r2: 18px;
-  --lb-ease: cubic-bezier(.16,1,.3,1);
+/* =========================================================
+   LEADERBOARD PAGE — No local :root, globals from index.css
+========================================================= */
+:root {
+  --lb-card:   #0d1b2e;
+  --lb-cyan:   #00c1de;
+  --lb-cyan2:  #38bdf8;
+  --lb-muted:  rgba(200, 215, 255, .68);
+  --lb-border: rgba(0, 193, 222, .2);
+  --lb-shadow: 0 20px 60px rgba(0, 0, 0, .7);
+  --lb-r:      20px;
+  --lb-ease:   cubic-bezier(.16, 1, .3, 1);
 }
 
-/* ===========================
-   Page + Wrap
-   =========================== */
-.ldb-page{
-  min-height: 60vh;
-}
-
-.ldb-wrap{
+.ldb-page  { min-height: 60vh; }
+.ldb-wrap  {
   width: min(100% - 3rem, 74rem);
   margin: 0 auto;
-  padding: 1.8rem 0 3rem;
+  padding: 2rem 0 3rem;
 }
+@media (max-width: 900px) { .ldb-wrap { width: min(100% - 2rem, 74rem); } }
+@media (max-width: 600px) { .ldb-wrap { width: min(100% - 1.2rem, 74rem); } }
 
-@media (max-width:900px){
-  .lb-wrap{
-    width: min(100% - 2rem, 74rem);
-    padding: 1.5rem 0 2.6rem;
-  }
-}
-@media (max-width:600px){
-  .lb-wrap{
-    width: min(100% - 1.2rem, 74rem);
-    padding: 1.25rem 0 2.2rem;
-  }
-}
-
-/* ===========================
-   Panel
-   =========================== */
-.ldb-panel{
-  position: relative;
+/* ── Panel ── */
+.ldb-panel {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
   border-radius: var(--lb-r);
   overflow: hidden;
-
-  background:
-    radial-gradient(900px 260px at 18% 0%, rgba(0,193,222,.10), transparent 62%),
-    radial-gradient(700px 240px at 82% 0%, rgba(255,255,255,.04), transparent 65%),
-    linear-gradient(180deg, var(--lb-panelA), var(--lb-panelB));
-
-  border: 1px solid rgba(255,255,255,.05);
-
-  box-shadow:
-    var(--lb-shadowSoft),
-    0 0 50px rgba(255,255,255,.04);
+  box-shadow: var(--lb-shadow), 0 0 0 1px rgba(0, 193, 222, .06);
 }
 
-/* ===========================
-   Glossy cap (like Activity)
-   =========================== */
-.ldb-head{
+/* ── Head ── */
+.ldb-head {
   position: relative;
-  padding: 26px 28px 18px;
-  border-bottom: 1px solid rgba(0,193,222,.14);
-
-  background: linear-gradient(
-    180deg,
-    rgba(255,255,255,0.05) 0%,
-    rgba(255,255,255,0) 70%
-  );
+  padding: 1.75rem 2rem 1.5rem;
+  border-bottom: 1px solid var(--lb-border);
+  background: rgba(0, 193, 222, .05);
+}
+.ldb-head::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 193, 222, .6), transparent);
 }
 
-/* cyan cap glow */
-.ldb-head::before{
-  content:'';
-  position:absolute;
-  left:0;
-  right:0;
-  top:-26px;
-  height:72px;
-  border-radius: 32px 32px 0 0;
-  background: radial-gradient(
-    140% 120% at 50% -20%,
-    rgba(0,193,222,0.24) 0%,
-    rgba(56,189,248,0.10) 25%,
-    rgba(0,193,222,0) 62%
-  );
-  pointer-events:none;
-}
-
-/* subtle inner highlight */
-.ldb-head::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), transparent 55%);
-  opacity: .55;
-}
-
-/* Title row */
-.ldb-title-row{
-  display:grid;
-  grid-template-columns: 1fr auto;
-  align-items:end;
-  gap: 14px;
-}
-
-.ldb-title{
-  margin:0;
-  font-size: 26px;
-  font-weight: 950;
-  color: var(--lb-cyan);
-  text-shadow: 0 0 18px rgba(0,193,222,0.18);
-  letter-spacing: .1px;
-}
-
-/* ===========================
-   Tabs
-   =========================== */
-.ldb-tabs{
-  display:inline-flex;
-  gap: 8px;
+.ldb-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
-.ldb-tab{
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-weight: 900;
-  font-size: 14px;
-
-  color: rgba(232,241,255,.90);
-
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(0,193,222,.26);
-
-  cursor:pointer;
-
-  box-shadow:
-    0 12px 26px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.06);
-
-  transition:
-    transform .16s var(--lb-ease),
-    box-shadow .25s ease,
-    background .25s ease,
-    border-color .25s ease,
-    filter .2s ease;
+.ldb-title {
+  font-family: 'Syne', sans-serif;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(90deg, #ffffff 0%, rgba(0, 193, 222, .9) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.ldb-tab:hover{
-  transform: translateY(-2px);
-  background: rgba(0,193,222,.06);
-  border-color: rgba(0,193,222,.45);
-  box-shadow:
-    0 18px 44px rgba(0,0,0,.50),
-    0 0 22px rgba(0,193,222,.10),
-    inset 0 1px 0 rgba(255,255,255,.08);
-}
-
-/* Active */
-.ldb-tab.active{
-  background: linear-gradient(90deg, #00c1de 0%, #38bdf8 60%, #3b82f6 100%);
-  color: rgba(2,6,23,.92);
-  border-color: rgba(255,255,255,.18);
-  box-shadow:
-    0 18px 44px rgba(0,193,222,.26),
-    0 0 18px rgba(56,189,248,.12),
-    inset 0 -2px 0 rgba(0,0,0,.28);
-}
-
-/* ===========================
-   Ghost button
-   =========================== */
-.ldb-btn{
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-weight: 900;
-  cursor: pointer;
-
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(0,193,222,.40);
-  color: rgba(232,241,255,.92);
-
-  box-shadow:
-    0 12px 26px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.06);
-
-  transition:
-    transform .16s var(--lb-ease),
-    box-shadow .25s ease,
-    background .25s ease,
-    border-color .25s ease;
-}
-
-.ldb-btn.ghost:hover{
-  transform: translateY(-2px);
-  background: rgba(0,193,222,.06);
-  border-color: rgba(0,193,222,.60);
-  box-shadow:
-    0 18px 44px rgba(0,0,0,.50),
-    0 0 22px rgba(0,193,222,.10),
-    inset 0 1px 0 rgba(255,255,255,.08);
-}
-.ldb-btn:active{ transform: translateY(-1px); }
-
-/* Subtle helper text */
-.ldb-subtle{
-  margin-top: 8px;
+.ldb-subtle {
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 6px;
   color: var(--lb-muted);
-  font-size: 14px;
+  font-size: 0.85rem;
 }
 
-/* ===========================
-   Body
-   =========================== */
-.ldb-body{
-  padding: 22px 28px 28px;
-}
-.ldb-loading{
-  color: rgba(232,241,255,.90);
-  text-align:center;
+/* ── Tabs ── */
+.ldb-tabs {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
-/* ===========================
-   Table
-   =========================== */
-.ldb-table{
-  width:100%;
+.ldb-tab {
+  font-family: 'DM Sans', sans-serif;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: rgba(232, 241, 255, .85);
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid rgba(0, 193, 222, .2);
+  cursor: pointer;
+  transition: transform .15s var(--lb-ease), background .2s ease, border-color .2s ease;
+}
+.ldb-tab:hover {
+  transform: translateY(-2px);
+  background: rgba(0, 193, 222, .06);
+  border-color: rgba(0, 193, 222, .4);
+}
+.ldb-tab.active {
+  background: linear-gradient(90deg, #00c1de 0%, #38bdf8 60%, #3b82f6 100%);
+  color: rgba(2, 6, 23, .92);
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(0, 193, 222, .25);
+}
+
+/* ── Ghost button ── */
+.ldb-btn {
+  font-family: 'DM Sans', sans-serif;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid rgba(0, 193, 222, .3);
+  color: rgba(232, 241, 255, .9);
+  transition: transform .15s var(--lb-ease), background .2s ease;
+}
+.ldb-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(0, 193, 222, .06);
+}
+
+/* ── Body ── */
+.ldb-body {
+  padding: 1.5rem 2rem 2rem;
+  background: #0a1525;
+}
+.ldb-loading {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--lb-muted);
+  text-align: center;
+  padding: 2rem;
+}
+
+/* ── Table ── */
+.ldb-table {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0 10px;
   table-layout: fixed;
 }
 
-.ldb-table thead th,
-.ldb-table tbody td{
+.ldb-table thead th {
+  font-family: 'Syne', sans-serif;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lb-cyan);
+  padding: 10px 18px;
+  background: rgba(0, 193, 222, .07);
+  border-bottom: 1px solid rgba(0, 193, 222, .14);
+}
+.ldb-table thead th:first-child  { border-radius: 12px 0 0 12px; width: 90px; text-align: center; }
+.ldb-table thead th:last-child   { border-radius: 0 12px 12px 0; width: 140px; text-align: right; padding-right: 24px; }
+
+/* ── Rows ── */
+.ldb-table tbody tr {
+  position: relative;
+  background: #111f35;
+  border-radius: 14px;
+  transition: transform .4s var(--lb-ease), box-shadow .4s ease;
+}
+.ldb-table tbody tr:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .6), 0 0 25px rgba(0, 193, 222, .08);
+}
+
+.ldb-table tbody td {
   padding: 14px 18px;
   vertical-align: middle;
+  font-family: 'DM Sans', sans-serif;
+}
+.ldb-table tbody td:first-child { border-radius: 14px 0 0 14px; text-align: center; }
+.ldb-table tbody td:last-child  { border-radius: 0 14px 14px 0; }
+
+/* ── Top 3 row glows (matching dashboard) ── */
+.ldb-row.top-1 {
+  background: linear-gradient(90deg, rgba(255,215,0,.08) 0%, #111f35 60%);
+  box-shadow: 0 0 0 1px rgba(255,215,0,.4), 0 10px 40px rgba(255,215,0,.12);
+}
+.ldb-row.top-2 {
+  background: linear-gradient(90deg, rgba(192,192,192,.07) 0%, #111f35 60%);
+  box-shadow: 0 0 0 1px rgba(192,192,192,.35), 0 10px 40px rgba(192,192,192,.08);
+}
+.ldb-row.top-3 {
+  background: linear-gradient(90deg, rgba(205,127,50,.08) 0%, #111f35 60%);
+  box-shadow: 0 0 0 1px rgba(205,127,50,.4), 0 10px 40px rgba(205,127,50,.1);
 }
 
-/* headers */
-.ldb-table thead th{
-  text-align:left;
-  font-size: 13px;
-  color: rgba(200,215,255,.70);
-  font-weight: 800;
-
-  /* match recent-activities header strip */
-  background: rgba(0,193,222,.06);
-  border-bottom: 1px solid rgba(0,193,222,.14);
-}
-.ldb-table thead th:first-child{
-  border-top-left-radius: 14px;
-  border-bottom-left-radius: 14px;
-}
-.ldb-table thead th:last-child{
-  border-top-right-radius: 14px;
-  border-bottom-right-radius: 14px;
-}
-
-/* column sizing */
-.ldb-table thead th:nth-child(1),
-.lb-table tbody td:nth-child(1){
-  width: 90px;
-  text-align:center;
-}
-.ldb-table thead th:nth-child(2),
-.ldb-table tbody td:nth-child(2){
-  width:auto;
-}
-.ldb-table thead th:nth-child(3),
-.ldb-table tbody td:nth-child(3){
-  width: 140px;
-  text-align:right;
-  padding-right: 24px;
-}
-
-/* ===========================
-   Rows (no hover background — lift/glow only)
-   =========================== */
-.ldb-table tbody tr{
-  background: linear-gradient(180deg, var(--lb-rowA), var(--lb-rowB));
-  border: 1px solid rgba(0,193,222,.10);
-  color: rgba(232,241,255,.92);
-  border-radius: 14px;
-
-  box-shadow: 0 18px 45px rgba(0,0,0,.75);
-
-  transition:
-    transform .45s var(--lb-ease),
-    box-shadow .45s var(--lb-ease),
-    border-color .35s ease;
-}
-
-/* keep the row color constant (no background change), only lift/glow */
-.ldb-table tbody tr:hover{
-  transform: translateY(-6px);
-  border-color: rgba(0,193,222,.22);
-  box-shadow:
-    0 26px 70px rgba(0,0,0,.88),
-    0 0 35px rgba(0,193,222,.12);
-}
-
-.ldb-table tbody td:first-child{
-  border-top-left-radius: 14px;
-  border-bottom-left-radius: 14px;
-}
-.ldb-table tbody td:last-child{
-  border-top-right-radius: 14px;
-  border-bottom-right-radius: 14px;
-}
-
-/* ===========================
-   Rank Badge
-   =========================== */
-.ldb-rank{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-
-  min-width: 40px;
-  height: 30px;
+/* ── Rank badge ── */
+.ldb-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
   border-radius: 999px;
-
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(0,193,222,.22);
-
-  font-weight: 950;
-  color: rgba(232,241,255,.92);
-
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  background: rgba(0, 193, 222, .08);
+  border: 1px solid rgba(0, 193, 222, .2);
+  color: #eaf6ff;
+}
+.ldb-row.top-1 .ldb-rank {
+  background: rgba(255,215,0,.12);
+  border-color: rgba(255,215,0,.65);
+  box-shadow: 0 0 18px rgba(255,215,0,.2), 0 0 40px rgba(255,215,0,.1);
+}
+.ldb-row.top-2 .ldb-rank {
+  background: rgba(192,192,192,.12);
+  border-color: rgba(192,192,192,.6);
+  box-shadow: 0 0 14px rgba(192,192,192,.16);
+}
+.ldb-row.top-3 .ldb-rank {
+  background: rgba(205,127,50,.12);
+  border-color: rgba(205,127,50,.6);
+  box-shadow: 0 0 14px rgba(205,127,50,.16);
 }
 
-/* Podium row glow (Gold/Silver/Bronze) */
-.ldb-row.top-1{
-  border-color: rgba(255,215,0,.55);
-  box-shadow:
-    0 26px 75px rgba(0,0,0,.90),
-    0 0 65px rgba(255,215,0,.16);
-}
-.ldb-row.top-2{
-  border-color: rgba(192,192,192,.55);
-  box-shadow:
-    0 26px 75px rgba(0,0,0,.90),
-    0 0 65px rgba(192,192,192,.14);
-}
-.ldb-row.top-3{
-  border-color: rgba(205,127,50,.60);
-  box-shadow:
-    0 26px 75px rgba(0,0,0,.90),
-    0 0 65px rgba(205,127,50,.14);
-}
-
-/* Rank badge colors for top 3 */
-.ldb-row.top-1 .lb-rank{
-  background: rgba(255,215,0,.14);
-  border-color: rgba(255,215,0,.55);
-  color: rgba(2,6,23,.92);
-  box-shadow: 0 0 26px rgba(255,215,0,.16);
-}
-.ldb-row.top-2 .lb-rank{
-  background: rgba(192,192,192,.14);
-  border-color: rgba(192,192,192,.55);
-  color: rgba(2,6,23,.92);
-  box-shadow: 0 0 26px rgba(192,192,192,.14);
-}
-.ldb-row.top-3 .lb-rank{
-  background: rgba(205,127,50,.16);
-  border-color: rgba(205,127,50,.60);
-  color: rgba(2,6,23,.92);
-  box-shadow: 0 0 26px rgba(205,127,50,.14);
-}
-
-/* user + points */
-.ldb-user{
-  font-weight: 850;
-  color: rgba(232,241,255,.92);
-}
-.ldb-points{
-  font-weight: 950;
+/* ── User + points cells ── */
+.ldb-user   { font-weight: 600; color: rgba(232,241,255,.92); }
+.ldb-points {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
   color: var(--lb-cyan2);
-  text-align:right;
+  text-align: right;
+  padding-right: 24px !important;
 }
 
-/* empty row */
-.ldb-empty{
-  text-align:center;
-  color: rgba(200,215,255,.65);
-  padding: 24px 0;
-  background: transparent;
+/* ── Empty ── */
+.ldb-empty {
+  font-family: 'DM Sans', sans-serif;
+  text-align: center;
+  color: var(--lb-muted);
+  padding: 2rem 0;
 }

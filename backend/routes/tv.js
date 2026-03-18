@@ -19,7 +19,7 @@ router.get("/events", tvAuth, (req, res) => {
 
   res.write(`event: hello\ndata: {"ok":true}\n\n`);
 
-  addClient(res);
+  addClient(res, req.tv.company_id);
 });
 
 /**

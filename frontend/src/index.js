@@ -9,12 +9,12 @@ import { BrandProvider } from './brand/BrandProvider';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <BrandProvider>
       <BrowserRouter>
         <AuthProvider>
+          <BrandProvider>
           <App />
+          </BrandProvider>
         </AuthProvider>
       </BrowserRouter>
-    </BrandProvider>
   </React.StrictMode>,
 );

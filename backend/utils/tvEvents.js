@@ -1,5 +1,7 @@
 // utils/tvEvents.js
-const clients = new Set();
+
+// Map of res -> company_id so broadcasts are scoped per company
+const clients = new Map();
 
 /** send SSE event */
 function sendSse(res, event, data) {
@@ -8,11 +10,12 @@ function sendSse(res, event, data) {
 }
 
 /**
- * Register an SSE client
+ * Register an SSE client scoped to a company
  * @param {import("express").Response} res
+ * @param {number} company_id
  */
-function addClient(res) {
-  clients.add(res);
+function addClient(res, company_id) {
+  clients.set(res, company_id);
 
   // keep-alive ping (proxies kill idle connections)
   const ping = setInterval(() => {
@@ -28,10 +31,14 @@ function addClient(res) {
 }
 
 /**
- * Broadcast to all connected TV screens
+ * Broadcast to all TV screens belonging to a specific company only
+ * @param {string} event
+ * @param {object} data  — must include company_id
  */
 function broadcast(event, data) {
-  for (const res of clients) {
+  const { company_id } = data;
+  for (const [res, clientCompanyId] of clients) {
+    if (clientCompanyId !== company_id) continue;
     try {
       sendSse(res, event, data);
     } catch {

@@ -6,13 +6,11 @@
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-
   max-width: 70rem;
   margin: 2rem auto;
-  padding: 1.5rem 2rem; /* Add consistent inner padding */
+  padding: 1.5rem 2rem;
 }
 
-/* Add a clear header for existing sections */
 .existing-container span {
   display: block;
   font-weight: 700;
@@ -21,12 +19,11 @@
   margin-bottom: 1rem;
 }
 
-/* Table adjustments */
 .company-table,
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* prevent stretching */
+  table-layout: fixed;
   border-radius: 15px;
   overflow: hidden;
 }
@@ -59,7 +56,6 @@
   background-color: #1e293b;
 }
 
-/* Pagination adjustments */
 .pagination {
   display: flex;
   justify-content: center;
@@ -87,24 +83,19 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-/* Wrapper that holds the trigger + the form (centered, no side padding) */
+
 .create-collapsible {
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: #0f1624;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-
-  /* Center alignment */
   max-width: 70rem;
   margin: 2rem auto;
-
-  /* no side padding so header touches rounded edges */
   padding-left: 0;
   padding-right: 0;
 }
 
-/* Clickable header/trigger */
 .collapsible-trigger {
   width: 100%;
   display: flex;
@@ -112,24 +103,17 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1.1rem 1.5rem;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 193, 222, 0.12),
-    rgba(0, 193, 222, 0.04)
-  );
+  background: linear-gradient(180deg, rgba(0, 193, 222, 0.12), rgba(0, 193, 222, 0.04));
   color: #00c1de;
   font-weight: 700;
   letter-spacing: 0.2px;
   border: 0;
   cursor: pointer;
   font-size: 1.5rem;
-
-  /* make header corners match outer wrapper */
   border-top-left-radius: 0.75rem;
   border-top-right-radius: 0.75rem;
 }
 
-/* Chevron animation */
 .collapsible-trigger .chevron {
   transition: transform 0.3s ease;
   margin-left: 8px;
@@ -139,20 +123,14 @@
   transform: rotate(180deg);
 }
 
-/* The sliding content (your form area) */
 .collapsible-content {
   max-height: 0;
   opacity: 0;
   overflow: hidden;
   transform: translateY(-8px);
-  transition:
-    max-height 0.45s ease,
-    opacity 0.25s ease,
-    transform 0.45s ease;
+  transition: max-height 0.45s ease, opacity 0.25s ease, transform 0.45s ease;
   will-change: max-height, opacity, transform;
   background: #121826;
-
-  /* no padding here; inner container will handle it */
   padding: 0;
 }
 
@@ -168,39 +146,32 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .collapsible-content {
-    transition: none;
-  }
-  .collapsible-trigger .chevron {
-    transition: none;
-  }
+  .collapsible-content { transition: none; }
+  .collapsible-trigger .chevron { transition: none; }
 }
 
 .create-container {
   width: 100%;
-  padding: 2rem 1.5rem; /* inner horizontal gap */
+  padding: 2rem 1.5rem;
   background-color: #121826;
-  border-radius: 20px; /* keep flat so outer wrapper's radius is the only one */
-  box-shadow: none; /* avoid double shadow inside */
+  border-radius: 20px;
+  box-shadow: none;
 }
 
-/* Title (used above sections if needed) */
 .super-admin-title {
   font-size: 1.875rem;
   font-weight: 600;
   text-align: center;
   color: #ffff;
-  margin: 0 0 1rem 0;
+  margin: 1.25rem 0 1rem 0;
 }
 
-/* Responsive, roomy grid for inputs */
 .grid-layout {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
-/* Labels */
 .label {
   display: block;
   margin-bottom: 0.6rem;
@@ -209,7 +180,6 @@
   font-size: 1rem;
 }
 
-/* Inputs, selects & textareas */
 .input-field,
 .textarea-field {
   width: 100%;
@@ -228,7 +198,6 @@
   box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.35);
 }
 
-/* Submit / primary buttons */
 .submit-btn {
   width: 100%;
   padding: 1rem;
@@ -238,10 +207,7 @@
   border-radius: 20px;
   cursor: pointer;
   border: none;
-  transition:
-    background-color 0.25s ease,
-    transform 0.06s ease,
-    box-shadow 0.18s ease;
+  transition: background-color 0.25s ease, transform 0.06s ease, box-shadow 0.18s ease;
   box-shadow: 0 4px 14px rgba(76, 81, 191, 0.28);
 }
 
@@ -251,11 +217,33 @@
   box-shadow: 0 8px 18px rgba(76, 81, 191, 0.32);
 }
 
-/* Messages */
 .message {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   background-color: rgba(0, 193, 222, 0.15);
   color: #e5e7eb;
+}
+
+/* ── Login gate ── */
+.super-admin-login {
+  max-width: 400px;
+  margin: 10vh auto;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Message variants ── */
+.message-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.message-success {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #86efac;
 }

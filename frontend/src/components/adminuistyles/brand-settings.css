@@ -10,7 +10,6 @@
   --bs-grad-end: var(--grad-end, #3b82f6);
 }
 
-/* Page container (your other pages usually sit below the fixed navbar already) */
 .bs-page {
   max-width: 70rem;
   margin: 0 auto;
@@ -18,7 +17,6 @@
   color: var(--bs-text);
 }
 
-/* Header */
 .bs-header {
   margin: 6px 0 18px;
 }
@@ -34,19 +32,15 @@
   font-size: 0.98rem;
 }
 
-/* Grid matching other admin pages (two boxes side-by-side on desktop) */
 .bs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
 @media (max-width: 960px) {
-  .bs-grid {
-    grid-template-columns: 1fr;
-  }
+  .bs-grid { grid-template-columns: 1fr; }
 }
 
-/* Box style like Upload Course / Course Details */
 .bs-box {
   background: var(--bs-card);
   border: 1px solid var(--bs-border);
@@ -64,13 +58,17 @@
   font-weight: 800;
   color: var(--bs-text);
 }
+.bs-box__sub {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
 .bs-box__body {
   padding: 16px;
   display: grid;
   gap: 10px;
 }
 
-/* Fields */
 .bs-label {
   color: #94a3b8;
   font-size: 0.92rem;
@@ -84,25 +82,19 @@
   border: 1px solid rgba(226, 232, 240, 0.18);
   color: var(--bs-text);
   outline: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .bs-input:focus {
   border-color: #4c51bf;
   box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.35);
 }
 
-/* Logo row */
 .bs-logo-row {
   grid-template-columns: auto 1fr;
   align-items: center;
 }
 @media (max-width: 560px) {
-  .bs-logo-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+  .bs-logo-row { grid-template-columns: 1fr; gap: 12px; }
 }
 .bs-logo {
   width: 96px;
@@ -124,7 +116,6 @@
   font-size: 0.9rem;
 }
 
-/* Actions (compact buttons, not full width) */
 .bs-actions {
   display: flex;
   gap: 10px;
@@ -132,7 +123,6 @@
   justify-content: flex-start;
 }
 
-/* Buttons (compact, consistent with other admin boxes) */
 .bs-btn {
   padding: 10px 16px;
   border-radius: 12px;
@@ -141,29 +131,20 @@
   color: var(--bs-text);
   font-weight: 800;
   cursor: pointer;
-  transition:
-    transform 0.12s ease,
-    box-shadow 0.18s ease,
-    opacity 0.18s ease;
+  transition: transform 0.12s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
-.bs-btn:hover {
-  transform: translateY(-1px);
-}
-
+.bs-btn:hover { transform: translateY(-1px); }
 .bs-btn--primary {
   border: none;
   color: #05222b;
-  background-image: linear-gradient(
-    90deg,
-    var(--bs-grad-start) 0%,
-    var(--bs-grad-end) 100%
-  );
-  box-shadow:
-    0 6px 18px rgba(34, 211, 238, 0.25),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  background-image: linear-gradient(90deg, var(--bs-grad-start) 0%, var(--bs-grad-end) 100%);
+  box-shadow: 0 6px 18px rgba(34, 211, 238, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+.bs-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* Footer */
 .bs-footer {
   display: flex;
   gap: 12px;
@@ -171,7 +152,6 @@
   margin-top: 18px;
 }
 
-/* Notes */
 .bs-note {
   border-radius: 12px;
   padding: 8px 12px;
@@ -186,4 +166,58 @@
   color: #fca5a5;
   background: rgba(252, 165, 165, 0.08);
   border: 1px solid rgba(252, 165, 165, 0.35);
+}
+
+/* ── Color picker section (new) ── */
+.bs-box--full {
+  grid-column: 1 / -1;
+}
+
+.bs-colors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.bs-color-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bs-color-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.bs-color-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.bs-color-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bs-color-input {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 2px;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.bs-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+.bs-color-input::-webkit-color-swatch { border-radius: 8px; border: none; }
+
+.bs-input--hex {
+  max-width: 110px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  padding: 10px 12px;
 }

@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import '../components/Home.css'; // ← add this
+import '../components/Home.css';
 
 export default function Home() {
   return (
     <div className="home-wrap">
       <div className="home-card">
-        <h2 className="home-title">Welcome to Saleserator Academy</h2>
+        <h2 className="home-title">
+          Welcome to <span>Saleserator Academy</span>
+        </h2>
         <p className="home-sub">
           Upskill your team with curated courses and tracked progress.
         </p>

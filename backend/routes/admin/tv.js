@@ -15,6 +15,7 @@ router.post("/tv/token", auth, requireRole("admin"), async (req, res) => {
   const rawToken = generateTvToken();
   const tokenHash = hashToken(rawToken);
   const company_id = req.user.company_id;
+  const slug = req.user.company_slug;
 
   await pool.query(
     `INSERT INTO tv_tokens (token_hash, company_id) VALUES ($1, $2)`,
@@ -24,7 +25,7 @@ router.post("/tv/token", auth, requireRole("admin"), async (req, res) => {
   const FRONTEND_ORIGIN =
     process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
-  const tvUrl = `${FRONTEND_ORIGIN}/tv?token=${encodeURIComponent(rawToken)}`;
+  const tvUrl = `${FRONTEND_ORIGIN}/${slug}/tv?token=${encodeURIComponent(rawToken)}`;
 
   res.json({ tv_url: tvUrl });
 });

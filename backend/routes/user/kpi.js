@@ -329,6 +329,7 @@ router.post('/track/video', auth, async (req, res) => {
       // Only broadcast if a row was actually inserted (first time only)
       if (videoInsert.rowCount > 0) {
         broadcast('activity_logged', {
+          company_id,
           userId,
           userName,
           activityType: 'video_completed',
@@ -353,6 +354,7 @@ router.post('/track/video', auth, async (req, res) => {
       // Only broadcast if a row was actually inserted (first time only)
       if (courseInsert.rowCount > 0) {
         broadcast('activity_logged', {
+          company_id,
           userId,
           userName,
           activityType: 'course_completed',

@@ -45,7 +45,7 @@ export default function App() {
         {/* Superadmin — TODO: protect this properly later */}
         <Route path="/superadmin" element={<SuperAdmin />} />
 
-        <Route path="/tv" element={<TvMode />} />
+        <Route path="/:company_slug/tv" element={<TvMode />} />
 
         {/* ── User Routes ── */}
         <Route
@@ -170,7 +170,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-         <Route
+        <Route
           path="/:company_slug/admin/company-settings"
           element={
             <ProtectedRoute role="admin">

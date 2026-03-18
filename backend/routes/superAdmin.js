@@ -6,9 +6,31 @@ const pool = require("../db");
 const router = express.Router();
 
 // ============================================================
+// SUPER ADMIN AUTH
+// Verifies the secret password from .env before allowing access
+// Add SUPER_ADMIN_PASSWORD=yourpassword to your .env file
+// ============================================================
+function requireSuperAdmin(req, res, next) {
+  const { secret } = req.headers;
+  if (!secret || secret !== process.env.SUPER_ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
+
+// ============================================================
+// VERIFY SECRET — frontend calls this on login
+// ============================================================
+router.post("/auth", (req, res) => {
+  const { secret } = req.body;
+  if (!secret || secret !== process.env.SUPER_ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Invalid password" });
+  }
+  res.json({ ok: true });
+});
+
+// ============================================================
 // SLUG HELPER
-// Converts company name to a URL-friendly slug
-// e.g. "Acme Corporation" -> "acme-corporation"
 // ============================================================
 function generateSlug(name) {
   return name
@@ -22,9 +44,8 @@ function generateSlug(name) {
 
 /* ======================================================
    CREATE COMPANY
-   Auto-generates slug from company name
 ====================================================== */
-router.post("/create-company", async (req, res) => {
+router.post("/create-company", requireSuperAdmin, async (req, res) => {
   const { name, logo_url, tagline } = req.body;
 
   try {
@@ -54,7 +75,6 @@ router.post("/create-company", async (req, res) => {
 
     const newCompanyId = newCompany.rows[0].company_id;
 
-    // Seed default rank rules and activity point rules for the new company
     await pool.query('SELECT seed_company_defaults($1)', [newCompanyId]);
 
     res.status(201).json({
@@ -69,9 +89,8 @@ router.post("/create-company", async (req, res) => {
 
 /* ======================================================
    CREATE ADMIN
-   Must be assigned to a company at creation time
 ====================================================== */
-router.post("/create-admin", async (req, res) => {
+router.post("/create-admin", requireSuperAdmin, async (req, res) => {
   try {
     const { name, email, password, company_id } = req.body;
 
@@ -121,7 +140,7 @@ router.post("/create-admin", async (req, res) => {
 /* ======================================================
    GET ALL COMPANIES
 ====================================================== */
-router.get("/companies", async (req, res) => {
+router.get("/companies", requireSuperAdmin, async (req, res) => {
   try {
     const companies = await pool.query(
       "SELECT * FROM companies ORDER BY company_id ASC"
@@ -135,7 +154,6 @@ router.get("/companies", async (req, res) => {
 
 /* ======================================================
    GET SINGLE COMPANY BY SLUG
-   Frontend uses this to resolve slug -> company_id on load
 ====================================================== */
 router.get("/companies/:slug", async (req, res) => {
   try {
@@ -158,9 +176,9 @@ router.get("/companies/:slug", async (req, res) => {
 });
 
 /* ======================================================
-   GET ALL ADMINS WITH THEIR COMPANY NAMES
+   GET ALL ADMINS
 ====================================================== */
-router.get("/admins", async (req, res) => {
+router.get("/admins", requireSuperAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 

@@ -4,50 +4,75 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useCallback,
 } from 'react';
+import api from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const BrandCtx = createContext(null);
-const NAME_KEY = 'companyName';
-const LOGO_KEY = 'companyLogo';
 
-function loadBrand() {
-  return {
-    name: localStorage.getItem(NAME_KEY) || 'Saleserator Academy',
-    logo: localStorage.getItem(LOGO_KEY) || null,
-  };
+const DEFAULT_THEME = {
+  primaryColor: '#4c51bf',
+  accentColor:  '#00c1de',
+  bgColor:      '#0a0f1e',
+  textColor:    '#f1f5f9',
+};
+
+function applyTheme(theme) {
+  const t = { ...DEFAULT_THEME, ...theme };
+  const root = document.documentElement;
+  root.style.setProperty('--color-primary', t.primaryColor);
+  root.style.setProperty('--color-accent',  t.accentColor);
+  root.style.setProperty('--color-bg',      t.bgColor);
+  root.style.setProperty('--color-text',    t.textColor);
 }
 
+const EMPTY_BRAND = {
+  name:    '',
+  logo:    null,
+  theme:   DEFAULT_THEME,
+  loading: false,
+};
+
 export function BrandProvider({ children }) {
-  const [brand, setBrand] = useState(loadBrand());
+  const { user } = useAuth();
+  const [brand, setBrand] = useState(EMPTY_BRAND);
 
-  // Persist to localStorage
-  useEffect(() => {
-    if (brand.name !== undefined) localStorage.setItem(NAME_KEY, brand.name);
-    if (brand.logo !== undefined && brand.logo !== null) {
-      localStorage.setItem(LOGO_KEY, brand.logo);
-    } else if (brand.logo === null) {
-      localStorage.removeItem(LOGO_KEY);
-    }
-  }, [brand]);
-
-  // Sync across tabs/windows
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key === NAME_KEY || e.key === LOGO_KEY) setBrand(loadBrand());
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+  const loadBrand = useCallback(() => {
+    api.get('/auth/brand')
+      .then(({ data }) => {
+        const theme = { ...DEFAULT_THEME, ...(data.theme || {}) };
+        setBrand({
+          name:    data.name     || '',
+          logo:    data.logo_url || null,
+          theme,
+          loading: false,
+        });
+        applyTheme(theme);
+      })
+      .catch(() => {
+        applyTheme(DEFAULT_THEME);
+        setBrand(EMPTY_BRAND);
+      });
   }, []);
 
-  const value = useMemo(
-    () => ({
-      brand,
-      setName: (name) => setBrand((b) => ({ ...b, name })),
-      setLogo: (logo) => setBrand((b) => ({ ...b, logo })),
-      setBrand,
-    }),
-    [brand],
-  );
+  useEffect(() => {
+    if (!user) {
+      // logged out — clear everything
+      applyTheme(DEFAULT_THEME);
+      setBrand(EMPTY_BRAND);
+      return;
+    }
+    // user changed (different company) — reset then fetch fresh
+    setBrand({ ...EMPTY_BRAND, loading: true });
+    loadBrand();
+  }, [user?.id]);
+
+  const value = useMemo(() => ({
+    brand,
+    refreshBrand: loadBrand,
+    previewTheme: (theme) => applyTheme({ ...DEFAULT_THEME, ...theme }),
+  }), [brand, loadBrand]);
 
   return <BrandCtx.Provider value={value}>{children}</BrandCtx.Provider>;
 }

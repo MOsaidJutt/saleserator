@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
 /* =========================================================
    SALESERATOR — NAV (Top Bar) Theme Matched
    Navy #121826 + Cyan #00c1de | Dark glass + subtle glow + sheen
@@ -166,16 +168,21 @@
 
 /* Title */
 .nav-title{
-  color: var(--brand-cyan);
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: .2px;
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
   max-width: 48vw;
 
-  text-shadow: 0 0 18px rgba(0,193,222,.18);
+  /* Gradient text matching home/signin */
+  background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 60%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.25));
 }
 
 /* Right side actions */
@@ -201,7 +208,8 @@
   border-radius: 999px;
   border: 1px solid transparent;
 
-  font-weight: 900;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
   font-size: .95rem;
   line-height: 1;
   white-space: nowrap;
