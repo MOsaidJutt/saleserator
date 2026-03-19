@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
 /* =========================================================
    SALESERATOR — Course Requests (Admin) (FINAL)
    Dark Glass Navy + Cyan | Shimmer • Glow • Motion
@@ -138,6 +140,7 @@
    ========================================================= */
 
 .cr-head{
+  font-family: 'Syne', sans-serif;
   position: relative;
   padding: 1.15rem 1.4rem;
   margin: 0;
@@ -311,6 +314,7 @@
 
 /* Meta */
 .cr-meta{
+  font-family: 'DM Sans', sans-serif;
   display: grid;
   gap: .35rem;
   color: rgba(232,241,255,.90);

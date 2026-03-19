@@ -89,7 +89,7 @@ export default function EditCourseVideos() {
 
   const s3Folder = useMemo(() => {
     if (!course) return '';
-    return course.s3_prefix || `courses/${course?.id}/`;
+    return course.s3_prefix || `courses/${slug}/${course?.id}/`;
   }, [course]);
 
   async function onPickFiles(e) {

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
 /* =====================================================
    SALESERATOR — EDIT COURSE (Premium Glass Dark Navy)
    Same classes, consistent animations/effects site-wide
@@ -147,6 +149,7 @@
 }
 
 .edit-course-header h1{
+  font-family: 'Syne', sans-serif;
   margin: 0;
   font-size: 1.65rem;
   font-weight: 900;
@@ -293,6 +296,7 @@
 
 /* Labels */
 .form-field label{
+  font-family: 'DM Sans', sans-serif;
   font-weight: 800;
   color: var(--sr-cyan);
   font-size: .98rem;

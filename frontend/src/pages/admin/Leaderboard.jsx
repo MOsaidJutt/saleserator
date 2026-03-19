@@ -16,6 +16,8 @@ export default function Leaderboard() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('points'); // Default sorting by points
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 10;
 
   async function loadLeaderboard() {
     setLoading(true);
@@ -26,6 +28,7 @@ export default function Leaderboard() {
         )}&sort=${sort}`,
       );
       setItems(response.data.items || []);
+      setCurrentPage(1);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -163,22 +166,30 @@ export default function Leaderboard() {
               </thead>
               <tbody>
                 {items.length > 0 ? (
-                  items.map((u, idx) => (
-                    <tr key={u.user_id}>
-                      <td>{u.rank ?? idx + 1}</td>
-                      <td>{u.name}</td>
-                      <td>{u.total_points}</td>
-                      <td>{u.activity_count}</td>
-                      <td>
-                        <Link
-                          to={`/${slug}/admin/leaderboard/user/${u.user_id}?start=${start}&end=${end}`}
-                          className="link"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                  items
+                    .slice(
+                      (currentPage - 1) * ROWS_PER_PAGE,
+                      currentPage * ROWS_PER_PAGE,
+                    )
+                    .map((u, idx) => (
+                      <tr key={u.user_id}>
+                        <td>
+                          {u.rank ??
+                            (currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                        </td>
+                        <td>{u.name}</td>
+                        <td>{u.total_points}</td>
+                        <td>{u.activity_count}</td>
+                        <td>
+                          <Link
+                            to={`/${slug}/admin/leaderboard/user/${u.user_id}?start=${start}&end=${end}`}
+                            className="link"
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
                 ) : (
                   <tr>
                     <td colSpan="5" className="empty">
@@ -188,6 +199,34 @@ export default function Leaderboard() {
                 )}
               </tbody>
             </table>
+            {items.length > ROWS_PER_PAGE && (
+              <div className="lb-pagination">
+                <button
+                  className="lb-page-btn"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ← Previous
+                </button>
+                <span className="lb-page-info">
+                  Page {currentPage} of{' '}
+                  {Math.ceil(items.length / ROWS_PER_PAGE)}
+                </span>
+                <button
+                  className="lb-page-btn"
+                  onClick={() =>
+                    setCurrentPage((p) =>
+                      Math.min(Math.ceil(items.length / ROWS_PER_PAGE), p + 1),
+                    )
+                  }
+                  disabled={
+                    currentPage >= Math.ceil(items.length / ROWS_PER_PAGE)
+                  }
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

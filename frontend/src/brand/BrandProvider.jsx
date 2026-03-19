@@ -4,12 +4,12 @@ import React, {
   useEffect,
   useMemo,
   useState,
-  useCallback,
 } from 'react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
 const BrandCtx = createContext(null);
+const BRAND_KEY = 'company_brand';
 
 const DEFAULT_THEME = {
   primaryColor: '#4c51bf',
@@ -27,52 +27,104 @@ function applyTheme(theme) {
   root.style.setProperty('--color-text',    t.textColor);
 }
 
-const EMPTY_BRAND = {
-  name:    '',
-  logo:    null,
-  theme:   DEFAULT_THEME,
-  loading: false,
-};
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(BRAND_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveToStorage(brand) {
+  try {
+    localStorage.setItem(BRAND_KEY, JSON.stringify(brand));
+  } catch {}
+}
+
+function clearStorage() {
+  try {
+    localStorage.removeItem(BRAND_KEY);
+  } catch {}
+}
+
+const EMPTY_BRAND = { name: '', logo: null, theme: DEFAULT_THEME };
 
 export function BrandProvider({ children }) {
   const { user } = useAuth();
-  const [brand, setBrand] = useState(EMPTY_BRAND);
 
-  const loadBrand = useCallback(() => {
+  const [brand, setBrand] = useState(() => {
+    const stored = loadFromStorage();
+    if (stored) {
+      applyTheme(stored.theme || DEFAULT_THEME);
+      return stored;
+    }
+    return EMPTY_BRAND;
+  });
+
+  useEffect(() => {
+    if (!user?.id) {
+      // Logged out — clear
+      clearStorage();
+      applyTheme(DEFAULT_THEME);
+      setBrand(EMPTY_BRAND);
+      return;
+    }
+
+    // Check if stored brand belongs to this user
+    const stored = loadFromStorage();
+    if (stored?.userId === user.id) {
+      // Already have it — just apply theme
+      applyTheme(stored.theme || DEFAULT_THEME);
+      setBrand(stored);
+      return;
+    }
+
+    // Different user or no stored brand — fetch once
     api.get('/auth/brand')
       .then(({ data }) => {
         const theme = { ...DEFAULT_THEME, ...(data.theme || {}) };
-        setBrand({
+        const newBrand = {
+          userId:  user.id,
           name:    data.name     || '',
           logo:    data.logo_url || null,
           theme,
-          loading: false,
-        });
+        };
+        saveToStorage(newBrand);
+        setBrand(newBrand);
         applyTheme(theme);
       })
       .catch(() => {
         applyTheme(DEFAULT_THEME);
         setBrand(EMPTY_BRAND);
       });
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      // logged out — clear everything
-      applyTheme(DEFAULT_THEME);
-      setBrand(EMPTY_BRAND);
-      return;
-    }
-    // user changed (different company) — reset then fetch fresh
-    setBrand({ ...EMPTY_BRAND, loading: true });
-    loadBrand();
   }, [user?.id]);
 
-  const value = useMemo(() => ({
-    brand,
-    refreshBrand: loadBrand,
-    previewTheme: (theme) => applyTheme({ ...DEFAULT_THEME, ...theme }),
-  }), [brand, loadBrand]);
+  const refreshBrand = () => {
+    if (!user?.id) return;
+    api.get('/auth/brand').then(({ data }) => {
+      const theme = { ...DEFAULT_THEME, ...(data.theme || {}) };
+      const newBrand = {
+        userId:  user.id,
+        name:    data.name     || '',
+        logo:    data.logo_url || null,
+        theme,
+      };
+      saveToStorage(newBrand);
+      setBrand(newBrand);
+      applyTheme(theme);
+    });
+  };
+
+  const value = useMemo(
+    () => ({
+      brand,
+      refreshBrand,
+      previewTheme: (theme) => applyTheme({ ...DEFAULT_THEME, ...theme }),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [brand],
+  );
 
   return <BrandCtx.Provider value={value}>{children}</BrandCtx.Provider>;
 }

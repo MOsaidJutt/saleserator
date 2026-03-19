@@ -2,16 +2,17 @@ import React, { useEffect, useState } from 'react';
 import api from '../../api';
 import Nav from '../../components/Navbar';
 import '../../components/adminuistyles/CourseForm.css';
+import '../../components/adminuistyles/CompanySettings.css';
 
 const BADGE_COLOR_OPTIONS = ['gray', 'cyan', 'blue', 'purple', 'amber', 'red'];
 
 const BADGE_PREVIEW = {
-  gray:   { bg: '#374151', text: '#d1d5db' },
-  cyan:   { bg: '#164e63', text: '#67e8f9' },
-  blue:   { bg: '#1e3a5f', text: '#60a5fa' },
+  gray: { bg: '#374151', text: '#d1d5db' },
+  cyan: { bg: '#164e63', text: '#67e8f9' },
+  blue: { bg: '#1e3a5f', text: '#60a5fa' },
   purple: { bg: '#3b0764', text: '#d8b4fe' },
-  amber:  { bg: '#451a03', text: '#fcd34d' },
-  red:    { bg: '#450a0a', text: '#fca5a5' },
+  amber: { bg: '#451a03', text: '#fcd34d' },
+  red: { bg: '#450a0a', text: '#fca5a5' },
 };
 
 export default function CompanySettings() {
@@ -56,8 +57,8 @@ export default function CompanySettings() {
       prev.map((r) =>
         r.activity_type === activity_type
           ? { ...r, points_per_unit: value }
-          : r
-      )
+          : r,
+      ),
     );
   };
 
@@ -80,9 +81,7 @@ export default function CompanySettings() {
 
   const handleRankChange = (rank_id, field, value) => {
     setRankRules((prev) =>
-      prev.map((r) =>
-        r.rank_id === rank_id ? { ...r, [field]: value } : r
-      )
+      prev.map((r) => (r.rank_id === rank_id ? { ...r, [field]: value } : r)),
     );
   };
 
@@ -106,7 +105,9 @@ export default function CompanySettings() {
     return (
       <div>
         <Nav />
-        <div className="course-form-title" style={{ padding: '2rem' }}>Loading settings...</div>
+        <div className="course-form-title" style={{ padding: '2rem' }}>
+          Loading settings...
+        </div>
       </div>
     );
   }
@@ -115,174 +116,128 @@ export default function CompanySettings() {
     <div>
       <Nav />
 
-      <h2 className="course-form-title" style={{ marginTop: '1.25rem' }}>
-        Company Settings
-      </h2>
+      <h2 className="cs-title">Company Settings</h2>
 
       {/* ── Activity Point Rules ── */}
-      <section className="existing-courses-wrap">
-        <h3 className="existing-courses-title">Activity Point Rules</h3>
-        <p style={{ padding: '0 1.5rem', opacity: 0.6, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-          Set how many SP each activity type awards per unit.
-        </p>
-
-        <div className="existing-courses-body">
-          <div className="course-list">
+      <section className="cs-section">
+        <div className="cs-section-head">
+          <h3 className="cs-section-title">Activity Point Rules</h3>
+          <p className="cs-section-sub">
+            Set how many SP each activity type awards per unit.
+          </p>
+        </div>
+        <div className="cs-section-body">
+          <div className="cs-cards-grid">
             {activityRules.map((rule) => (
-              <article key={rule.activity_type} className="course-card">
-                <div className="course-card-header">
-                  <div>
-                    <div className="course-card-title">{rule.activity_type}</div>
-                    <div className="course-card-sub">Points per unit</div>
-                  </div>
-                  <div className="course-card-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <input
-                      type="number"
-                      min="0"
-                      value={rule.points_per_unit}
-                      onChange={(e) => handleActivityChange(rule.activity_type, e.target.value)}
-                      style={{
-                        width: '80px',
-                        padding: '0.4rem 0.6rem',
-                        borderRadius: '6px',
-                        border: '1px solid #334155',
-                        background: '#0f172a',
-                        color: '#f1f5f9',
-                        fontSize: '0.95rem',
-                        textAlign: 'center',
-                      }}
-                    />
-                    <button
-                      className="submit-btn"
-                      style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
-                      onClick={() => saveActivityRule(rule)}
-                      disabled={savingActivity === rule.activity_type}
-                    >
-                      {savingActivity === rule.activity_type ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
+              <div key={rule.activity_type} className="cs-card">
+                <div>
+                  <div className="cs-card-title">{rule.activity_type}</div>
+                  <div className="cs-card-sub">Points per unit</div>
                 </div>
-              </article>
+                <div className="cs-card-row">
+                  <input
+                    type="number"
+                    min="0"
+                    value={rule.points_per_unit}
+                    onChange={(e) =>
+                      handleActivityChange(rule.activity_type, e.target.value)
+                    }
+                    className="cs-input"
+                  />
+                  <button
+                    className="cs-save-btn"
+                    onClick={() => saveActivityRule(rule)}
+                    disabled={savingActivity === rule.activity_type}
+                  >
+                    {savingActivity === rule.activity_type
+                      ? 'Saving...'
+                      : 'Save'}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ── Rank Rules ── */}
-      <section className="existing-courses-wrap" style={{ marginTop: '2rem' }}>
-        <h3 className="existing-courses-title">Rank Thresholds</h3>
-        <p style={{ padding: '0 1.5rem', opacity: 0.6, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-          Set the SP required to reach each rank and its badge color.
-        </p>
-
-        <div className="existing-courses-body">
-          <div className="course-list">
+      <section className="cs-section">
+        <div className="cs-section-head">
+          <h3 className="cs-section-title">Rank Thresholds</h3>
+          <p className="cs-section-sub">
+            Set the SP required to reach each rank and its badge color.
+          </p>
+        </div>
+        <div className="cs-section-body">
+          <div className="cs-cards-grid">
             {rankRules.map((rule) => {
-              const preview = BADGE_PREVIEW[rule.badge_color] || BADGE_PREVIEW.gray;
+              const preview =
+                BADGE_PREVIEW[rule.badge_color] || BADGE_PREVIEW.gray;
               return (
-                <article key={rule.rank_id} className="course-card">
-                  <div className="course-card-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
-
-                    {/* Rank name */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
-                      <span
-                        style={{
-                          background: preview.bg,
-                          color: preview.text,
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '999px',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {rule.name}
-                      </span>
-                      <input
-                        type="text"
-                        value={rule.name}
-                        onChange={(e) => handleRankChange(rule.rank_id, 'name', e.target.value)}
-                        placeholder="Rank name"
-                        style={{
-                          width: '130px',
-                          padding: '0.4rem 0.6rem',
-                          borderRadius: '6px',
-                          border: '1px solid #334155',
-                          background: '#0f172a',
-                          color: '#f1f5f9',
-                          fontSize: '0.9rem',
-                        }}
-                      />
-                    </div>
-
-                    {/* Min SP */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.8rem', opacity: 0.6, whiteSpace: 'nowrap' }}>Min SP</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={rule.min_sp}
-                        onChange={(e) => handleRankChange(rule.rank_id, 'min_sp', e.target.value)}
-                        style={{
-                          width: '90px',
-                          padding: '0.4rem 0.6rem',
-                          borderRadius: '6px',
-                          border: '1px solid #334155',
-                          background: '#0f172a',
-                          color: '#f1f5f9',
-                          fontSize: '0.95rem',
-                          textAlign: 'center',
-                        }}
-                      />
-                    </div>
-
-                    {/* Badge color */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.8rem', opacity: 0.6, whiteSpace: 'nowrap' }}>Color</label>
-                      <select
-                        value={rule.badge_color || 'gray'}
-                        onChange={(e) => handleRankChange(rule.rank_id, 'badge_color', e.target.value)}
-                        style={{
-                          padding: '0.4rem 0.6rem',
-                          borderRadius: '6px',
-                          border: '1px solid #334155',
-                          background: '#0f172a',
-                          color: '#f1f5f9',
-                          fontSize: '0.85rem',
-                        }}
-                      >
-                        {BADGE_COLOR_OPTIONS.map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Save */}
-                    <button
-                      className="submit-btn"
-                      style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
-                      onClick={() => saveRankRule(rule)}
-                      disabled={savingRank === rule.rank_id}
+                <div key={rule.rank_id} className="cs-card">
+                  <div className="cs-card-row">
+                    <span
+                      className="cs-badge"
+                      style={{ background: preview.bg, color: preview.text }}
                     >
-                      {savingRank === rule.rank_id ? 'Saving...' : 'Save'}
-                    </button>
-
+                      {rule.name}
+                    </span>
+                    <input
+                      type="text"
+                      value={rule.name}
+                      onChange={(e) =>
+                        handleRankChange(rule.rank_id, 'name', e.target.value)
+                      }
+                      placeholder="Rank name"
+                      className="cs-input cs-input--wide"
+                    />
                   </div>
-                </article>
+                  <div className="cs-card-row">
+                    <span className="cs-label">Min SP</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={rule.min_sp}
+                      onChange={(e) =>
+                        handleRankChange(rule.rank_id, 'min_sp', e.target.value)
+                      }
+                      className="cs-input"
+                    />
+                    <span className="cs-label">Color</span>
+                    <select
+                      value={rule.badge_color || 'gray'}
+                      onChange={(e) =>
+                        handleRankChange(
+                          rule.rank_id,
+                          'badge_color',
+                          e.target.value,
+                        )
+                      }
+                      className="cs-select"
+                    >
+                      {BADGE_COLOR_OPTIONS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    className="cs-save-btn"
+                    onClick={() => saveRankRule(rule)}
+                    disabled={savingRank === rule.rank_id}
+                  >
+                    {savingRank === rule.rank_id ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* Message */}
       {message && (
-        <div
-          className={`message ${messageType === 'error' ? 'message-error' : 'message-success'}`}
-          style={{ position: 'fixed', bottom: '2rem', right: '2rem' }}
-        >
-          {message}
-        </div>
+        <div className={`cs-message cs-message--${messageType}`}>{message}</div>
       )}
     </div>
   );

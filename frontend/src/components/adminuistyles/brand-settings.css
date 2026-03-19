@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
 /* Page uses unique "bs-" prefix to avoid clashes with other pages */
 
 /* Theme variables (fallbacks if global vars not present) */
 :root {
   --bs-text: var(--text, #e5e7eb);
   --bs-border: var(--border, rgba(255, 255, 255, 0.06));
-  --bs-card: #0f1624;
+  --bs-card: #0d1b2e;
   --bs-cyan: var(--brand-cyan, #00c1de);
   --bs-grad-start: var(--grad-start, #22d3ee);
   --bs-grad-end: var(--grad-end, #3b82f6);
@@ -21,12 +23,14 @@
   margin: 6px 0 18px;
 }
 .bs-title {
+  font-family: 'Syne', sans-serif;
   margin: 0;
   font-size: 1.8rem;
   font-weight: 800;
   color: var(--bs-text);
 }
 .bs-subtitle {
+  font-family: 'DM Sans', sans-serif;
   margin: 6px 0 0;
   color: #94a3b8;
   font-size: 0.98rem;
@@ -53,6 +57,7 @@
   border-bottom: 1px solid var(--bs-border);
 }
 .bs-box__title {
+  font-family: 'Syne', sans-serif;
   margin: 0;
   font-size: 1.05rem;
   font-weight: 800;

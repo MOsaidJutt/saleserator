@@ -23,6 +23,8 @@ export default function LeaderboardUser() {
   const [breakdown, setBreakdown] = useState([]);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [recentPage, setRecentPage] = useState(1);
+  const RECENT_PER_PAGE = 15;
 
   async function loadUserData() {
     setLoading(true);
@@ -58,7 +60,7 @@ export default function LeaderboardUser() {
               </span>
             )}
           </h1>
-          <Link to={`/${slug}/admin/leaderboard`} className="link">
+          <Link to={`/${slug}/admin/leaderboard`} className="lb-back-btn">
             ← Back to Leaderboard
           </Link>
 
@@ -135,20 +137,26 @@ export default function LeaderboardUser() {
                 </tr>
               </thead>
               <tbody>
-                {recent.map((a) => (
-                  <tr key={a.activity_id}>
-                    <td>
-                      {a.date_logged &&
-                        new Date(a.date_logged).toLocaleDateString()}
-                    </td>
-                    <td>{a.activity_type}</td>
-                    <td>{a.value}</td>
-                    <td className="right">{a.points}</td>
-                    <td>
-                      {a.updated_at && new Date(a.updated_at).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                {recent
+                  .slice(
+                    (recentPage - 1) * RECENT_PER_PAGE,
+                    recentPage * RECENT_PER_PAGE,
+                  )
+                  .map((a) => (
+                    <tr key={a.activity_id}>
+                      <td>
+                        {a.date_logged &&
+                          new Date(a.date_logged).toLocaleDateString()}
+                      </td>
+                      <td>{a.activity_type}</td>
+                      <td>{a.value}</td>
+                      <td className="right">{a.points}</td>
+                      <td>
+                        {a.updated_at &&
+                          new Date(a.updated_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
                 {!recent.length && (
                   <tr>
                     <td colSpan="5" className="empty">
@@ -158,6 +166,37 @@ export default function LeaderboardUser() {
                 )}
               </tbody>
             </table>
+            {recent.length > RECENT_PER_PAGE && (
+              <div className="lb-pagination">
+                <button
+                  className="lb-page-btn"
+                  onClick={() => setRecentPage((p) => Math.max(1, p - 1))}
+                  disabled={recentPage === 1}
+                >
+                  ← Previous
+                </button>
+                <span className="lb-page-info">
+                  Page {recentPage} of{' '}
+                  {Math.ceil(recent.length / RECENT_PER_PAGE)}
+                </span>
+                <button
+                  className="lb-page-btn"
+                  onClick={() =>
+                    setRecentPage((p) =>
+                      Math.min(
+                        Math.ceil(recent.length / RECENT_PER_PAGE),
+                        p + 1,
+                      ),
+                    )
+                  }
+                  disabled={
+                    recentPage >= Math.ceil(recent.length / RECENT_PER_PAGE)
+                  }
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

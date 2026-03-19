@@ -23,6 +23,18 @@ export default function ActivitiesPage() {
   const [editDeleted, setEditDeleted] = useState(false);
 
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+
+  // Lock body scroll when edit modal is open
+  useEffect(() => {
+    if (editItem) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [editItem]);
   const toggleDropdown = () => {
     setDropdownOpen(!isDropdownOpen);
   };
@@ -313,7 +325,14 @@ export default function ActivitiesPage() {
             <div
               className="edit-modal"
               onMouseDown={(e) => {
-                if (e.target.classList.contains('edit-modal')) setEditItem(null);
+                if (e.target.classList.contains('edit-modal'))
+                  setEditItem(null);
+              }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 9999,
+                overflowY: 'auto',
               }}
             >
               <div
@@ -416,7 +435,6 @@ export default function ActivitiesPage() {
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
