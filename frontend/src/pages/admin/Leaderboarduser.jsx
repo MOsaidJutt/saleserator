@@ -65,27 +65,27 @@ export default function LeaderboardUser() {
           </Link>
 
           {/* Filter bar matching the Leaderboard Page */}
-          <div className="filter-container">
+          <div className="lb-filter-container">
             <div>
-              <label className="filter-label">Start</label>
+              <label className="lb-filter-label">Start</label>
               <input
                 type="date"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="filter-input"
+                className="lb-filter-input"
               />
             </div>
             <div>
-              <label className="filter-label">End</label>
+              <label className="lb-filter-label">End</label>
               <input
                 type="date"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="filter-input"
+                className="lb-filter-input"
               />
             </div>
             <button
-              className="filter-button"
+              className="lb-filter-button"
               onClick={loadUserData}
               disabled={loading}
             >

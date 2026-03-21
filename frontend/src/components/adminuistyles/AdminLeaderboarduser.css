@@ -62,14 +62,14 @@
 .leaderboard-user-page .link:hover { text-decoration: underline; }
 
 /* ── Filter bar ── */
-.leaderboard-user-page .filter-container {
+.leaderboard-user-page .lb-filter-container {
   display: flex;
   flex-wrap: wrap;
   gap: .75rem;
   align-items: flex-end;
   margin-bottom: 1.5rem;
 }
-.leaderboard-user-page .filter-label {
+.leaderboard-user-page .lb-filter-label {
   font-family: 'DM Sans', sans-serif;
   display: block;
   font-size: 0.72rem;
@@ -79,7 +79,7 @@
   color: #00c1de;
   margin-bottom: 5px;
 }
-.leaderboard-user-page .filter-input {
+.leaderboard-user-page .lb-filter-input {
   font-family: 'DM Sans', sans-serif;
   padding: 9px 12px;
   border-radius: 10px;
@@ -90,11 +90,11 @@
   outline: none;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
-.leaderboard-user-page .filter-input:focus {
+.leaderboard-user-page .lb-filter-input:focus {
   border-color: rgba(0, 193, 222, .5);
   box-shadow: 0 0 0 3px rgba(0, 193, 222, .1);
 }
-.leaderboard-user-page .filter-button {
+.leaderboard-user-page .lb-filter-button {
   font-family: 'DM Sans', sans-serif;
   background: linear-gradient(90deg, #00c1de, #38bdf8);
   color: rgba(2, 6, 23, .92);
@@ -106,8 +106,8 @@
   font-size: 0.88rem;
   transition: transform .12s ease, box-shadow .2s ease;
 }
-.leaderboard-user-page .filter-button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,193,222,.3); }
-.leaderboard-user-page .filter-button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.leaderboard-user-page .lb-filter-button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,193,222,.3); }
+.leaderboard-user-page .lb-filter-button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 
 /* ── Cards ── */
 .leaderboard-user-page .card {

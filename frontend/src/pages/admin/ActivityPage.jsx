@@ -182,86 +182,94 @@ export default function ActivitiesPage() {
         <div className="activity-page-content">
           <h1 className="page-title">Activities</h1>
           <div className="filter-container">
-            <div>
-              <label className="filter-label">Start</label>
-              <input
-                type="date"
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-                className="filter-input"
-              />
-            </div>
-            <div>
-              <label className="filter-label">End</label>
-              <input
-                type="date"
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-                className="filter-input"
-              />
-            </div>
-            <div>
-              <label className="filter-label">User ID</label>
-              <input
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className="filter-input"
-              />
-            </div>
-            <div>
-              <label className="filter-label">Search</label>
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                className="filter-input"
-              />
-            </div>
-            <div>
-              <label className="filter-label">Type</label>
-              <div
-                className={`
+            <div className="filter-inputs-row">
+              <div>
+                <label className="filter-label">Start</label>
+                <input
+                  type="date"
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+              <div>
+                <label className="filter-label">End</label>
+                <input
+                  type="date"
+                  value={end}
+                  onChange={(e) => setEnd(e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+              <div>
+                <label className="filter-label">User ID</label>
+                <input
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+              <div>
+                <label className="filter-label">Search</label>
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+              <div>
+                <label className="filter-label">Type</label>
+                <div
+                  className={`
                   custom-dropdown 
                   ${isDropdownOpen ? 'open' : ''}
                 `}
-              >
-                <div className="dropdown-selected" onClick={toggleDropdown}>
-                  <span>
-                    {activityTypeMapping[type] || 'Select Activity Type'}
-                  </span>
-                  <span className="dropdown-arrow">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="18"
-                      fill="currentColor"
-                      className="bi bi-chevron-down"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M1.5 5.5a.5.5 0 0 1 .707-.707L8 9.293l5.793-5.793a.5.5 0 0 1 .707.707L8 10.707 1.5 5.5z" />
-                    </svg>
-                  </span>
-                </div>
-                <ul className="dropdown-options">
-                  <li key="default" onClick={() => handleOptionSelect('')}>
-                    None
-                  </li>
-                  {activityTypes.map((activityType) => (
-                    <li
-                      key={activityType}
-                      onClick={() => handleOptionSelect(activityType)}
-                    >
-                      {activityTypeMapping[activityType]}
+                >
+                  <div className="dropdown-selected" onClick={toggleDropdown}>
+                    <span>
+                      {activityTypeMapping[type] || 'Select Activity Type'}
+                    </span>
+                    <span className="dropdown-arrow">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="18"
+                        fill="currentColor"
+                        className="bi bi-chevron-down"
+                        viewBox="0 0 16 16"
+                      >
+                        <path d="M1.5 5.5a.5.5 0 0 1 .707-.707L8 9.293l5.793-5.793a.5.5 0 0 1 .707.707L8 10.707 1.5 5.5z" />
+                      </svg>
+                    </span>
+                  </div>
+                  <ul className="dropdown-options">
+                    <li key="default" onClick={() => handleOptionSelect('')}>
+                      None
                     </li>
-                  ))}
-                </ul>
+                    {activityTypes.map((activityType) => (
+                      <li
+                        key={activityType}
+                        onClick={() => handleOptionSelect(activityType)}
+                      >
+                        {activityTypeMapping[activityType]}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-            <button onClick={load} className="filter-button" disabled={loading}>
-              {loading ? 'Loading...' : 'Load'}
-            </button>
-            <button onClick={downloadCsv} className="filter-button">
-              CSV
-            </button>
+            <div className="filter-btn-row">
+              <button
+                onClick={load}
+                className="filter-button"
+                disabled={loading}
+              >
+                {loading ? 'Loading...' : 'Load'}
+              </button>
+              <button onClick={downloadCsv} className="filter-button">
+                CSV
+              </button>
+            </div>
           </div>
           <div className="activity-table-container">
             <table className="admin-activity-table">

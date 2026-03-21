@@ -31,7 +31,7 @@ app.use(cors(corsOptions));
 // Global rate limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'production' ? 300 : 2000,
   message: { error: 'Too many requests, please try again later.' },
 });
 app.use(limiter);
@@ -39,7 +39,7 @@ app.use(limiter);
 // Stricter limiter for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === 'production' ? 10 : 100,
   message: { error: 'Too many login attempts, please try again later.' },
 });
 app.use('/auth', authLimiter);

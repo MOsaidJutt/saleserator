@@ -66,36 +66,36 @@ export default function Leaderboard() {
       <div className="leaderboard-page-container">
         <div className="leaderboard-page-content">
           <h1 className="page-title">Leaderboard</h1>
-          <div className="filter-container">
+          <div className="lb-filter-container">
             <div>
-              <label className="filter-label">Start</label>
+              <label className="lb-filter-label">Start</label>
               <input
                 type="date"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="filter-input"
+                className="lb-filter-input"
               />
             </div>
             <div>
-              <label className="filter-label">End</label>
+              <label className="lb-filter-label">End</label>
               <input
                 type="date"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="filter-input"
+                className="lb-filter-input"
               />
             </div>
             <div>
-              <label className="filter-label">Search</label>
+              <label className="lb-filter-label">Search</label>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="filter-input"
+                className="lb-filter-input"
               />
             </div>
 
             <div>
-              <label className="filter-label">Sort</label>
+              <label className="lb-filter-label">Sort</label>
               <div
                 className={`
                   custom-dropdown 
@@ -139,15 +139,15 @@ export default function Leaderboard() {
                 </ul>
               </div>
             </div>
-            <div className="button-container">
+            <div className="lb-button-container">
               <button
                 onClick={loadLeaderboard}
-                className="filter-button"
+                className="lb-filter-button"
                 disabled={loading}
               >
                 {loading ? 'Loading...' : 'Load'}
               </button>
-              <button onClick={downloadCsv} className="filter-button">
+              <button onClick={downloadCsv} className="lb-filter-button">
                 Download CSV
               </button>
             </div>

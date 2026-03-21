@@ -76,7 +76,11 @@
   margin: 0;
   cursor: default;
   border-bottom: 1px solid rgba(0, 193, 222, .12);
-  color: #00c1de;
+  color: #00c1de !important;
+  -webkit-text-fill-color: #00c1de !important;
+  background: rgba(0, 193, 222, .07) !important;
+  background-clip: unset !important;
+  -webkit-background-clip: unset !important;
 }
 
 /* ── Collapsible content ── */
