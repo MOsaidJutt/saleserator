@@ -9,6 +9,7 @@ const pool = require('./db');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ── Process-level crash guards ──
 // Keeps the server alive if an unhandled error slips through
