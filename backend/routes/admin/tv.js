@@ -23,7 +23,7 @@ router.post("/tv/token", auth, requireRole("admin"), async (req, res) => {
   );
 
   const FRONTEND_ORIGIN =
-    process.env.FRONTEND_ORIGIN || "http://localhost:3000";
+    process.env.FRONTEND_URL || "http://localhost:3000";
 
   const tvUrl = `${FRONTEND_ORIGIN}/${slug}/tv?token=${encodeURIComponent(rawToken)}`;
 

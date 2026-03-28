@@ -50,8 +50,6 @@ export default function CompanySettings() {
     setTimeout(() => setMessage(''), 3000);
   };
 
-  // ── Activity Rules ──────────────────────────────────────────
-
   const handleActivityChange = (activity_type, value) => {
     setActivityRules((prev) =>
       prev.map((r) =>
@@ -76,8 +74,6 @@ export default function CompanySettings() {
       setSavingActivity(null);
     }
   };
-
-  // ── Rank Rules ──────────────────────────────────────────────
 
   const handleRankChange = (rank_id, field, value) => {
     setRankRules((prev) =>
@@ -113,132 +109,143 @@ export default function CompanySettings() {
   }
 
   return (
-    <div>
+    /* KEY FIX: outer div gets overflow-x:hidden to stop page scroll,
+       inner cs-page div applies the padding around all sections */
+    <div style={{ overflowX: 'hidden' }}>
       <Nav />
 
-      <h2 className="cs-title">Company Settings</h2>
+      {/* cs-page provides the horizontal padding so sections never touch edges */}
+      <div className="cs-page">
+        <h2 className="cs-title">Company Settings</h2>
 
-      {/* ── Activity Point Rules ── */}
-      <section className="cs-section">
-        <div className="cs-section-head">
-          <h3 className="cs-section-title">Activity Point Rules</h3>
-          <p className="cs-section-sub">
-            Set how many SP each activity type awards per unit.
-          </p>
-        </div>
-        <div className="cs-section-body">
-          <div className="cs-cards-grid">
-            {activityRules.map((rule) => (
-              <div key={rule.activity_type} className="cs-card">
-                <div>
-                  <div className="cs-card-title">{rule.activity_type}</div>
-                  <div className="cs-card-sub">Points per unit</div>
-                </div>
-                <div className="cs-card-row">
-                  <input
-                    type="number"
-                    min="0"
-                    value={rule.points_per_unit}
-                    onChange={(e) =>
-                      handleActivityChange(rule.activity_type, e.target.value)
-                    }
-                    className="cs-input"
-                  />
-                  <button
-                    className="cs-save-btn"
-                    onClick={() => saveActivityRule(rule)}
-                    disabled={savingActivity === rule.activity_type}
-                  >
-                    {savingActivity === rule.activity_type
-                      ? 'Saving...'
-                      : 'Save'}
-                  </button>
-                </div>
-              </div>
-            ))}
+        {/* ── Activity Point Rules ── */}
+        <section className="cs-section">
+          <div className="cs-section-head">
+            <h3 className="cs-section-title">Activity Point Rules</h3>
+            <p className="cs-section-sub">
+              Set how many SP each activity type awards per unit.
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* ── Rank Rules ── */}
-      <section className="cs-section">
-        <div className="cs-section-head">
-          <h3 className="cs-section-title">Rank Thresholds</h3>
-          <p className="cs-section-sub">
-            Set the SP required to reach each rank and its badge color.
-          </p>
-        </div>
-        <div className="cs-section-body">
-          <div className="cs-cards-grid">
-            {rankRules.map((rule) => {
-              const preview =
-                BADGE_PREVIEW[rule.badge_color] || BADGE_PREVIEW.gray;
-              return (
-                <div key={rule.rank_id} className="cs-card">
-                  <div className="cs-card-row">
-                    <span
-                      className="cs-badge"
-                      style={{ background: preview.bg, color: preview.text }}
-                    >
-                      {rule.name}
-                    </span>
-                    <input
-                      type="text"
-                      value={rule.name}
-                      onChange={(e) =>
-                        handleRankChange(rule.rank_id, 'name', e.target.value)
-                      }
-                      placeholder="Rank name"
-                      className="cs-input cs-input--wide"
-                    />
+          <div className="cs-section-body">
+            <div className="cs-cards-grid">
+              {activityRules.map((rule) => (
+                <div key={rule.activity_type} className="cs-card">
+                  <div>
+                    <div className="cs-card-title">{rule.activity_type}</div>
+                    <div className="cs-card-sub">Points per unit</div>
                   </div>
                   <div className="cs-card-row">
-                    <span className="cs-label">Min SP</span>
                     <input
                       type="number"
                       min="0"
-                      value={rule.min_sp}
+                      value={rule.points_per_unit}
                       onChange={(e) =>
-                        handleRankChange(rule.rank_id, 'min_sp', e.target.value)
+                        handleActivityChange(rule.activity_type, e.target.value)
                       }
                       className="cs-input"
                     />
-                    <span className="cs-label">Color</span>
-                    <select
-                      value={rule.badge_color || 'gray'}
-                      onChange={(e) =>
-                        handleRankChange(
-                          rule.rank_id,
-                          'badge_color',
-                          e.target.value,
-                        )
-                      }
-                      className="cs-select"
+                    <button
+                      className="cs-save-btn"
+                      onClick={() => saveActivityRule(rule)}
+                      disabled={savingActivity === rule.activity_type}
                     >
-                      {BADGE_COLOR_OPTIONS.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                      {savingActivity === rule.activity_type
+                        ? 'Saving...'
+                        : 'Save'}
+                    </button>
                   </div>
-                  <button
-                    className="cs-save-btn"
-                    onClick={() => saveRankRule(rule)}
-                    disabled={savingRank === rule.rank_id}
-                  >
-                    {savingRank === rule.rank_id ? 'Saving...' : 'Save'}
-                  </button>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {message && (
-        <div className={`cs-message cs-message--${messageType}`}>{message}</div>
-      )}
+        {/* ── Rank Rules ── */}
+        <section className="cs-section">
+          <div className="cs-section-head">
+            <h3 className="cs-section-title">Rank Thresholds</h3>
+            <p className="cs-section-sub">
+              Set the SP required to reach each rank and its badge color.
+            </p>
+          </div>
+          <div className="cs-section-body">
+            <div className="cs-cards-grid">
+              {rankRules.map((rule) => {
+                const preview =
+                  BADGE_PREVIEW[rule.badge_color] || BADGE_PREVIEW.gray;
+                return (
+                  <div key={rule.rank_id} className="cs-card">
+                    <div className="cs-card-row">
+                      <span
+                        className="cs-badge"
+                        style={{ background: preview.bg, color: preview.text }}
+                      >
+                        {rule.name}
+                      </span>
+                      <input
+                        type="text"
+                        value={rule.name}
+                        onChange={(e) =>
+                          handleRankChange(rule.rank_id, 'name', e.target.value)
+                        }
+                        placeholder="Rank name"
+                        className="cs-input cs-input--wide"
+                      />
+                    </div>
+                    <div className="cs-card-row">
+                      <span className="cs-label">Min SP</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={rule.min_sp}
+                        onChange={(e) =>
+                          handleRankChange(
+                            rule.rank_id,
+                            'min_sp',
+                            e.target.value,
+                          )
+                        }
+                        className="cs-input"
+                      />
+                      <span className="cs-label">Color</span>
+                      <select
+                        value={rule.badge_color || 'gray'}
+                        onChange={(e) =>
+                          handleRankChange(
+                            rule.rank_id,
+                            'badge_color',
+                            e.target.value,
+                          )
+                        }
+                        className="cs-select"
+                      >
+                        {BADGE_COLOR_OPTIONS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      className="cs-save-btn"
+                      onClick={() => saveRankRule(rule)}
+                      disabled={savingRank === rule.rank_id}
+                    >
+                      {savingRank === rule.rank_id ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {message && (
+          <div className={`cs-message cs-message--${messageType}`}>
+            {message}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

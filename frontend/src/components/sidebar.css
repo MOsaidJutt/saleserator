@@ -60,7 +60,6 @@ body {
   width: var(--side-w);
   height: calc(100vh - var(--nav-h));
 
-  /* Dark glass surface */
   background:
     radial-gradient(700px 260px at 10% 0%, rgba(0,193,222,.12), transparent 60%),
     linear-gradient(180deg, var(--bg-dark), var(--bg-dark-2));
@@ -69,23 +68,24 @@ body {
   box-shadow: var(--shadow), var(--glow);
 
   overflow-y: auto;
-  z-index: 1001;
+  /* Sidebar sits above backdrop (1000) but below nav (1100) */
+  z-index: 1050;
 
   transform: translateX(-100%);
   transition: transform .35s var(--ease);
 
   will-change: transform;
   padding: 14px 18px 20px;
+  box-sizing: border-box;
 }
 
-/* Inner highlight (glass realism) */
+/* Inner highlight */
 .sidenav::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.05), transparent 55%);
+  background: linear-gradient(180deg, rgba(255,255,255,.05), transparent 55%);
 }
 
 /* Active (open) */
@@ -95,28 +95,32 @@ body {
 
 /* ===========================
    Sidebar Backdrop
+   — sits below sidebar, above page content
+   — pointer-events block ALL interaction with page behind it
    =========================== */
 .sidebar-backdrop {
   position: fixed;
-  top: var(--nav-h);
+  /* top is set inline via JS to BASE_NAVBAR_HEIGHT, so it starts below nav */
   left: 0;
   right: 0;
   bottom: 0;
 
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 
   opacity: 0;
+  /* CRITICAL: pointer-events none by default, auto when visible */
   pointer-events: none;
-  z-index: 1000;
+  /* sits above page content (sidebars/cards/etc) but below sidenav */
+  z-index: 1040;
 
   transition: opacity .25s ease;
 }
 
 .sidebar-backdrop.show {
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: auto; /* blocks ALL clicks on the page behind */
 }
 
 /* Lock page scroll when drawer is open */
@@ -173,7 +177,7 @@ body.no-scroll {
   box-shadow: 0 8px 24px rgba(0,0,0,.45);
 }
 
-/* Active */
+/* Active — current page indicator */
 .sidenav ul li a.active {
   color: rgba(2,6,23,.92);
   background: linear-gradient(90deg, var(--cyan) 0%, #38bdf8 100%);
@@ -181,27 +185,51 @@ body.no-scroll {
   box-shadow:
     0 12px 30px rgba(0,193,222,.30),
     inset 0 -2px 0 rgba(0,0,0,.25);
+  transform: translateX(0);
+  font-weight: 700;
+  /* Left accent bar to visually confirm current page */
+  position: relative;
+}
+.sidenav ul li a.active::before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 60%;
+  background: #00c1de;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 8px rgba(0,193,222,.6);
 }
 
-/* Optional icon styling (if you use icons) */
 .sidenav ul li a svg {
   font-size: 18px;
   color: currentColor;
 }
 
 /* ===========================
-   Scrollbar (optional polish)
+   Scrollbar polish
    =========================== */
-.sidenav::-webkit-scrollbar {
-  width: 8px;
-}
-.sidenav::-webkit-scrollbar-track {
-  background: transparent;
-}
+.sidenav::-webkit-scrollbar { width: 8px; }
+.sidenav::-webkit-scrollbar-track { background: transparent; }
 .sidenav::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,.12);
   border-radius: 999px;
 }
-.sidenav::-webkit-scrollbar-thumb:hover {
-  background: rgba(0,193,222,.25);
+.sidenav::-webkit-scrollbar-thumb:hover { background: rgba(0,193,222,.25); }
+
+/* ===========================
+   RESPONSIVE — smaller nav height on mobile
+   =========================== */
+@media (max-width: 768px) {
+  :root { --nav-h: 72px; }
+  .sidenav { width: 260px; }
+}
+
+@media (max-width: 480px) {
+  :root { --nav-h: 64px; }
+  .sidenav { width: 240px; padding: 10px 14px 16px; }
+  .sidenav h2 { font-size: 17px; margin: 14px 8px 16px; }
+  .sidenav ul li a { font-size: 14px; padding: 10px 13px; }
 }

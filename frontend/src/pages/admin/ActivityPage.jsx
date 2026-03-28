@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import api, { apiCsv } from '../../api';
-import Navbar from '../../components/Navbar'; // Assuming Navbar is located in the same folder
-import '../../components/adminuistyles/AdminActivityLog.css'; // Custom CSS file
+import Navbar from '../../components/Navbar';
+import '../../components/adminuistyles/AdminActivityLog.css';
 
 export default function ActivitiesPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
-  const [items, setItems] = useState([]); // will always be an array
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState('');
-  const [type, setType] = useState(''); // Use the mapped value here
+  const [type, setType] = useState('');
   const [q, setQ] = useState('');
 
-  // Edit modal stuff
   const [editItem, setEditItem] = useState(null);
   const [editReason, setEditReason] = useState('');
   const [editValue, setEditValue] = useState('');
@@ -24,7 +23,6 @@ export default function ActivitiesPage() {
 
   const [isDropdownOpen, setDropdownOpen] = useState(false);
 
-  // Lock body scroll when edit modal is open
   useEffect(() => {
     if (editItem) {
       document.body.style.overflow = 'hidden';
@@ -35,16 +33,14 @@ export default function ActivitiesPage() {
       document.body.style.overflow = '';
     };
   }, [editItem]);
-  const toggleDropdown = () => {
-    setDropdownOpen(!isDropdownOpen);
-  };
+
+  const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
 
   const handleOptionSelect = (activityType) => {
-    setType(activityType); // Store the mapped value
-    setDropdownOpen(false); // Close dropdown after selection
+    setType(activityType);
+    setDropdownOpen(false);
   };
 
-  // Define the mapping between the stored activity types and their display names
   const activityTypeMapping = {
     video_completed: 'Video Completed',
     course_completed: 'Course Completed',
@@ -60,7 +56,6 @@ export default function ActivitiesPage() {
     referralsReceived: 'Referrals Received',
   };
 
-  // Activity type options for the dropdown
   const activityTypes = Object.keys(activityTypeMapping);
 
   async function load() {
@@ -68,19 +63,9 @@ export default function ActivitiesPage() {
     try {
       const validUserId = userId === '' ? null : userId;
       const validType = type === '' ? null : type;
-
-      console.log('Requesting data with:', {
-        start,
-        end,
-        userId: validUserId,
-        type: validType,
-        q,
-      });
-
       const res = await api(
         `/admin/activities?start=${start}&end=${end}&user_id=${validUserId || ''}&type=${validType || ''}&q=${q || ''}`,
       );
-
       const rows = Array.isArray(res.data.items) ? res.data.items : [];
       setItems(rows);
     } catch (e) {
@@ -102,33 +87,25 @@ export default function ActivitiesPage() {
     setEditValue(item.value);
     setEditPoints(item.points);
     setEditType(item.activity_type);
-
-    // Fix for the date issue: Convert date_logged to UTC format before displaying
-    const utcDate = new Date(item.date_logged).toISOString().slice(0, 10); // Convert to UTC date (YYYY-MM-DD)
-    setEditDate(utcDate); // Set the state for editDate
-
+    const utcDate = new Date(item.date_logged).toISOString().slice(0, 10);
+    setEditDate(utcDate);
     setEditDeleted(item.is_deleted);
   }
 
   const handleActivityUpdate = async (e) => {
     e.preventDefault();
-
-    // Prepare the updated activity data
     const updatedActivity = {
       activity_type: editType,
       value: Number(editValue),
       points: Number(editPoints),
-      date_logged: editDate, // This is in UTC
+      date_logged: editDate,
       is_deleted: editDeleted,
       edit_reason: editReason,
     };
-
-    // Check if edit_reason is provided before updating
     if (!updatedActivity.edit_reason || !updatedActivity.edit_reason.trim()) {
       alert('Edit reason is required');
       return;
     }
-
     try {
       await api.patch(
         `/admin/activities/edit/${editItem.activity_id}`,
@@ -136,7 +113,7 @@ export default function ActivitiesPage() {
       );
       alert('Activity updated successfully!');
       setEditItem(null);
-      load(); // Reload the activities list after update
+      load();
     } catch (e) {
       console.error(e);
       alert('Failed to update activity');
@@ -176,11 +153,13 @@ export default function ActivitiesPage() {
   }
 
   return (
-    <div>
+    /* KEY FIX: overflow-x hidden on outermost div stops page-level horizontal scroll */
+    <div style={{ overflowX: 'hidden' }}>
       <Navbar />
       <div className="activity-page-container">
         <div className="activity-page-content">
           <h1 className="page-title">Activities</h1>
+
           <div className="filter-container">
             <div className="filter-inputs-row">
               <div>
@@ -220,10 +199,7 @@ export default function ActivitiesPage() {
               <div>
                 <label className="filter-label">Type</label>
                 <div
-                  className={`
-                  custom-dropdown 
-                  ${isDropdownOpen ? 'open' : ''}
-                `}
+                  className={`custom-dropdown ${isDropdownOpen ? 'open' : ''}`}
                 >
                   <div className="dropdown-selected" onClick={toggleDropdown}>
                     <span>
@@ -235,7 +211,6 @@ export default function ActivitiesPage() {
                         width="20"
                         height="18"
                         fill="currentColor"
-                        className="bi bi-chevron-down"
                         viewBox="0 0 16 16"
                       >
                         <path d="M1.5 5.5a.5.5 0 0 1 .707-.707L8 9.293l5.793-5.793a.5.5 0 0 1 .707.707L8 10.707 1.5 5.5z" />
@@ -258,6 +233,7 @@ export default function ActivitiesPage() {
                 </div>
               </div>
             </div>
+
             <div className="filter-btn-row">
               <button
                 onClick={load}
@@ -271,64 +247,70 @@ export default function ActivitiesPage() {
               </button>
             </div>
           </div>
+
+          {/* KEY FIX: activity-table-scroll div wraps the table directly */}
           <div className="activity-table-container">
-            <table className="admin-activity-table">
-              <thead>
-                <tr>
-                  <th>No.</th>
-                  <th>User</th>
-                  <th>Type</th>
-                  <th>Value</th>
-                  <th>Points</th>
-                  <th>Date</th>
-                  <th>Deleted</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.length > 0 ? (
-                  items.map((it, index) => (
-                    <tr key={it.activity_id}>
-                      <td>{index + 1}</td>
-                      <td>{it.name}</td>
-                      <td>
-                        {activityTypeMapping[it.activity_type] ||
-                          it.activity_type}
-                      </td>
-                      <td>{it.value}</td>
-                      <td>{it.points}</td>
-                      <td>
-                        {it.date_logged
-                          ? new Date(it.date_logged).toLocaleDateString()
-                          : ''}
-                      </td>
-                      <td>{it.is_deleted ? 'yes' : ''}</td>
-                      <td>
-                        <button
-                          onClick={() => startEdit(it)}
-                          className="edit-button"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => deleteItem(it)}
-                          className="delete-button"
-                        >
-                          Delete
-                        </button>
+            <div className="activity-table-scroll">
+              <table className="admin-activity-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Points</th>
+                    <th>Date</th>
+                    <th>Deleted</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.length > 0 ? (
+                    items.map((it, index) => (
+                      <tr key={it.activity_id}>
+                        <td>{index + 1}</td>
+                        <td>{it.name}</td>
+                        <td>
+                          {activityTypeMapping[it.activity_type] ||
+                            it.activity_type}
+                        </td>
+                        <td>{it.value}</td>
+                        <td>{it.points}</td>
+                        <td>
+                          {it.date_logged
+                            ? new Date(it.date_logged).toLocaleDateString()
+                            : ''}
+                        </td>
+                        <td>{it.is_deleted ? 'yes' : ''}</td>
+                        <td>
+                          <button
+                            onClick={() => startEdit(it)}
+                            className="edit-button"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteItem(it)}
+                            className="delete-button"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="no-activities">
+                        No activities
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="8" className="no-activities">
-                      No activities
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Edit Modal */}
           {editItem && (
             <div
               className="edit-modal"
@@ -348,9 +330,7 @@ export default function ActivitiesPage() {
                 onMouseDown={(e) => e.stopPropagation()}
               >
                 <h2>Edit Activity</h2>
-
                 <form onSubmit={handleActivityUpdate} className="edit-form">
-                  {/* BODY SCROLL AREA */}
                   <div className="edit-modal-body">
                     <div className="form-field">
                       <label>Activity Type</label>
@@ -362,7 +342,6 @@ export default function ActivitiesPage() {
                         placeholder="Activity Type"
                       />
                     </div>
-
                     <div className="form-field">
                       <label>Value</label>
                       <input
@@ -373,7 +352,6 @@ export default function ActivitiesPage() {
                         placeholder="Value"
                       />
                     </div>
-
                     <div className="form-field">
                       <label>Points</label>
                       <input
@@ -384,7 +362,6 @@ export default function ActivitiesPage() {
                         placeholder="Points"
                       />
                     </div>
-
                     <div className="form-field">
                       <label>Date</label>
                       <input
@@ -394,10 +371,7 @@ export default function ActivitiesPage() {
                         className="form-input"
                       />
                     </div>
-
-                    {/* Bottom two-column area */}
                     <div className="modal-bottom-grid">
-                      {/* LEFT: Edit Reason (spans 2 rows) */}
                       <div className="form-field modal-reason">
                         <label>Edit Reason</label>
                         <textarea
@@ -407,8 +381,6 @@ export default function ActivitiesPage() {
                           placeholder="Edit Reason"
                         />
                       </div>
-
-                      {/* RIGHT Row 1: Mark Deleted */}
                       <div className="form-field modal-deleted">
                         <label>Mark Deleted</label>
                         <div className="checkbox-row">
@@ -421,8 +393,6 @@ export default function ActivitiesPage() {
                           <span className="checkbox-text">Deleted</span>
                         </div>
                       </div>
-
-                      {/* RIGHT Row 2: Buttons */}
                       <div className="modal-actions-right">
                         <button
                           type="button"
@@ -437,9 +407,7 @@ export default function ActivitiesPage() {
                       </div>
                     </div>
                   </div>
-                  {/* ✅ CLOSE edit-modal-body */}
                 </form>
-                {/* ✅ CLOSE form */}
               </div>
             </div>
           )}

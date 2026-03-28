@@ -22,12 +22,12 @@ const activityNameMapping = {
 };
 
 const BADGE_COLORS = {
-  gray:   { bg: '#374151', text: '#d1d5db' },
-  cyan:   { bg: '#164e63', text: '#67e8f9' },
-  blue:   { bg: '#1e3a5f', text: '#60a5fa' },
+  gray: { bg: '#374151', text: '#d1d5db' },
+  cyan: { bg: '#164e63', text: '#67e8f9' },
+  blue: { bg: '#1e3a5f', text: '#60a5fa' },
   purple: { bg: '#3b0764', text: '#d8b4fe' },
-  amber:  { bg: '#451a03', text: '#fcd34d' },
-  red:    { bg: '#450a0a', text: '#fca5a5' },
+  amber: { bg: '#451a03', text: '#fcd34d' },
+  red: { bg: '#450a0a', text: '#fca5a5' },
 };
 
 function RankBadge({ name, color }) {
@@ -71,15 +71,27 @@ export default function UserDashboard() {
     }
 
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
-    return <div><Nav /><div className="dashboard-wrap">Loading...</div></div>;
+    return (
+      <div>
+        <Nav />
+        <div className="dashboard-wrap">Loading...</div>
+      </div>
+    );
   }
 
   if (!dash) {
-    return <div><Nav /><div className="dashboard-wrap">Failed to load dashboard.</div></div>;
+    return (
+      <div>
+        <Nav />
+        <div className="dashboard-wrap">Failed to load dashboard.</div>
+      </div>
+    );
   }
 
   const {
@@ -100,12 +112,14 @@ export default function UserDashboard() {
     <div>
       <Nav />
       <div className="dashboard-wrap">
-
         {/* Welcome Banner */}
         <section className="welcome-banner">
           <div className="welcome-banner__left">
             <h2>Welcome back, {user.name}!</h2>
-            <p>Leaderboard position this week: <strong>#{currentRank ?? '—'}</strong></p>
+            <p>
+              Leaderboard position this week:
+              <strong>#{currentRank ?? '—'}</strong>
+            </p>
           </div>
 
           {/* Rank display */}
@@ -123,7 +137,9 @@ export default function UserDashboard() {
                 <div className="rank-progress-meta">
                   <span>{rank.totalSp} SP</span>
                   {rank.rankName !== rank.nextRank && (
-                    <span>{rank.nextRankAt} SP → {rank.nextRank}</span>
+                    <span>
+                      {rank.nextRankAt} SP → {rank.nextRank}
+                    </span>
                   )}
                 </div>
               </div>
@@ -150,27 +166,34 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* Quick Stats */}
-        <section className="quick-stats">
-          <div className="stat-card">
-            <h4>Total Points</h4>
-            <div className="stat-value">{Math.round(totalPoints)}</div>
-            <div className={`stat-change ${weeklyChangePercent >= 0 ? 'up' : 'down'}`}>
-              {weeklyChangePercent >= 0
-                ? `+${weeklyChangePercent}% vs last week`
-                : `${weeklyChangePercent}% vs last week`}
+        {/* Quick Stats — This Week */}
+        <section className="stats-section">
+          <h3>This Week</h3>
+          <div className="quick-stats">
+            <div className="stat-card">
+              <h4>Total Points</h4>
+              <div className="stat-value">{Math.round(totalPoints)}</div>
+              <div
+                className={`stat-change ${weeklyChangePercent >= 0 ? 'up' : 'down'}`}
+              >
+                {weeklyChangePercent >= 0
+                  ? `+${weeklyChangePercent}% vs last week`
+                  : `${weeklyChangePercent}% vs last week`}
+              </div>
             </div>
-          </div>
 
-          <div className="stat-card">
-            <h4>Courses Completed</h4>
-            <div className="stat-value">{coursesCompleted}</div>
-          </div>
+            <div className="stat-card">
+              <h4>Courses Completed</h4>
+              <div className="stat-value">{coursesCompleted}</div>
+            </div>
 
-          <div className="stat-card">
-            <h4>This Week</h4>
-            <div className="stat-value">Time Spent: {thisWeek.secondsWatched}</div>
-            <div className="stat-value">{thisWeek.assetsViewed || 0} assets viewed</div>
+            <div className="stat-card">
+              <h4>Assets Viewed</h4>
+              <div className="stat-value">{thisWeek.assetsViewed || 0}</div>
+              <div className="stat-sub">
+                Time Spent: {thisWeek.secondsWatched}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -180,9 +203,16 @@ export default function UserDashboard() {
           <div className="recommend-grid">
             {recommended.length ? (
               recommended.map((r) => (
-                <div key={`rec-${r.id}`} className="rec-card" role="button" tabIndex={0}>
+                <div
+                  key={`rec-${r.id}`}
+                  className="rec-card"
+                  role="button"
+                  tabIndex={0}
+                >
                   <h4>{r.title}</h4>
-                  <small>{r.category} • {r.points} pts</small>
+                  <small>
+                    {r.category} • {r.points} pts
+                  </small>
                 </div>
               ))
             ) : (
@@ -209,7 +239,9 @@ export default function UserDashboard() {
               {recentActivities.length ? (
                 recentActivities.map((a, idx) => (
                   <div key={idx} className="activity-row">
-                    <div>{activityNameMapping[a.activity_type] || a.activity_type}</div>
+                    <div>
+                      {activityNameMapping[a.activity_type] || a.activity_type}
+                    </div>
                     <div>{new Date(a.date_logged).toLocaleDateString()}</div>
                     <div>{a.points || 0}</div>
                   </div>
@@ -234,10 +266,19 @@ export default function UserDashboard() {
               {leaderboard.map((u, idx) => {
                 const pos = idx + 1;
                 return (
-                  <div key={u.user_id} className={`lb-row ${pos <= 3 ? `top-${pos}` : ''}`}>
+                  <div
+                    key={u.user_id}
+                    className={`lb-row ${pos <= 3 ? `top-${pos}` : ''}`}
+                  >
                     <div className="lb-cell lb-col-rank">
                       <span className="rank-badge">
-                        {pos === 1 ? '🏆' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `#${pos}`}
+                        {pos === 1
+                          ? '🏆'
+                          : pos === 2
+                            ? '🥈'
+                            : pos === 3
+                              ? '🥉'
+                              : `#${pos}`}
                       </span>
                     </div>
                     <div className="lb-cell lb-col-user">{u.name}</div>
@@ -255,7 +296,6 @@ export default function UserDashboard() {
             </Link>
           </div>
         </section>
-
       </div>
     </div>
   );

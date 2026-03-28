@@ -26,6 +26,7 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .cc-title {
@@ -56,6 +57,7 @@
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .cc-chip {
@@ -207,7 +209,7 @@
 .cc-right     { text-align: right; font-variant-numeric: tabular-nums; }
 .cc-sp        { font-family: 'Syne', sans-serif; color: #00c1de; font-weight: 700; }
 
-/* Gold/silver/bronze rows — animated shimmer */
+/* Gold/silver/bronze rows */
 @keyframes ccShimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -262,9 +264,9 @@
 .cc-insight strong { color: #00c1de; }
 
 /* Dominant highlights */
-.cc-side[data-dominant="Combat"]     { box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(239,68,68,.25); }
+.cc-side[data-dominant="Combat"]      { box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(239,68,68,.25); }
 .cc-side[data-dominant="R&D / Intel"] { box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(59,130,246,.25); }
-.cc-side[data-dominant="Training"]   { box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(34,197,94,.25); }
+.cc-side[data-dominant="Training"]    { box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(34,197,94,.25); }
 
 /* ── TV Mode card ── */
 .summary-card.tv-card {
@@ -337,16 +339,64 @@
   color: #00c1de;
 }
 
-/* ── Responsive ── */
-@media (max-width: 1100px) {
-  .admin-dashboard { width: min(100% - 2rem, 82rem); }
-  .dashboard-content { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .cc-kpi { grid-column: span 3; }
-  .cc-table-card, .cc-side { grid-column: 1 / -1; }
+/* ── Table scroll wrapper for small screens ── */
+.cc-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
-@media (max-width: 720px) {
-  .admin-dashboard { width: min(100% - 1.2rem, 82rem); }
-  .dashboard-content { grid-template-columns: 1fr; }
-  .cc-kpi, .cc-table-card, .cc-side, .summary-card { grid-column: 1 / -1; }
-  .cc-title { font-size: 1.8rem; }
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+/* Tablet (1024px) */
+@media (max-width: 1024px) {
+  .admin-dashboard { width: min(100% - 2rem, 82rem); }
+  .dashboard-content { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; }
+  .cc-kpi { grid-column: span 3; min-height: 110px; }
+  .cc-kpi-value { font-size: 2.2rem; }
+  .cc-table-card { grid-column: 1 / -1; }
+  .cc-side { grid-column: 1 / -1; }
+  .cc-title { font-size: 2rem; }
+}
+
+/* Small tablet (768px) */
+@media (max-width: 768px) {
+  .admin-dashboard {
+    width: min(100% - 1.5rem, 82rem);
+    padding: 1.5rem 0 2rem;
+  }
+  .dashboard-content { grid-template-columns: repeat(2, 1fr); gap: .875rem; }
+  .cc-kpi { grid-column: span 1; min-height: 100px; padding: 1.1rem 1.1rem; }
+  .cc-kpi-value { font-size: 1.9rem; }
+  .cc-kpi-label { font-size: 0.68rem; }
+  .cc-table-card, .cc-side, .summary-card { grid-column: 1 / -1; }
+  .cc-title { font-size: 1.75rem; }
+  .cc-sub { font-size: 0.88rem; }
+  .cc-period { width: 100%; justify-content: center; }
+  .cc-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  /* Table scroll on tablet */
+  .cc-table-card { overflow: hidden; }
+  .cc-table-scroll { overflow-x: auto; }
+  .cc-table { min-width: 520px; }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+  .admin-dashboard {
+    width: min(100% - 1rem, 82rem);
+    padding: 1rem 0 1.5rem;
+  }
+  .dashboard-content { grid-template-columns: 1fr; gap: .75rem; }
+  .cc-kpi { grid-column: 1 / -1; min-height: 90px; padding: 1rem; }
+  .cc-kpi-value { font-size: 1.7rem; }
+  .cc-title { font-size: 1.5rem; }
+  .cc-chip { padding: 6px 10px; font-size: 0.8rem; }
+  .cc-table thead th,
+  .cc-table tbody td { padding: 10px 12px; font-size: 0.8rem; }
+  .cc-table { min-width: 460px; }
+  .cc-tv-controls { flex-direction: column; align-items: stretch; }
+  .summary-card.tv-card { padding: 1rem; }
 }

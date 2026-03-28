@@ -1,41 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 /* =========================================================
-   SALESERATOR — Course Requests (Admin) (FINAL)
-   Dark Glass Navy + Cyan | Shimmer • Glow • Motion
+   SALESERATOR — Course Requests (Admin)
+   Dark Glass Navy + Cyan
    ========================================================= */
 
 :root{
   --sr-bg0:#050814;
   --sr-bg1:#020617;
-
   --sr-cyan:#00c1de;
   --sr-cyan2:#38bdf8;
-
   --sr-ink: rgba(232,241,255,.92);
   --sr-muted: rgba(190,205,255,.72);
-
   --sr-panelA: rgba(10,14,34,.92);
   --sr-panelB: rgba(6,10,28,.92);
   --sr-panelInner: rgba(18,24,38,.92);
-
   --sr-border: rgba(0,193,222,.16);
   --sr-borderSoft: rgba(255,255,255,.07);
-
   --sr-shadow: 0 30px 90px rgba(0,0,0,.65);
   --sr-shadowLift: 0 55px 130px rgba(0,0,0,.82);
-
   --sr-r: 20px;
   --sr-r2: 18px;
-
   --sr-ease: cubic-bezier(.16,1,.3,1);
 }
-
-/* =========================================================
-   OPTIONAL: Page background effects
-   If you can, wrap page with <div class="cr-page"> ... </div>
-   If not, nothing breaks.
-   ========================================================= */
 
 .cr-page{
   position: relative;
@@ -71,21 +58,16 @@
     radial-gradient(1200px 800px at 50% 20%, rgba(255,255,255,.04), transparent 60%);
 }
 
-/* =========================================================
-   Layout wrap
-   ========================================================= */
-
+/* ── Layout wrap ── */
 .cr-wrap{
   max-width: 75rem;
   margin: 0 auto;
-  padding: 2.2rem 1.5rem;
+  /* KEY FIX: horizontal padding */
+  padding: 2.2rem 1rem;
   box-sizing: border-box;
 }
 
-/* =========================================================
-   Panel shell (glass + shimmer)
-   ========================================================= */
-
+/* ── Panel shell ── */
 @keyframes srShimmer{
   0%{ transform: translateX(-60%); opacity:.55; }
   50%{ transform: translateX(25%); opacity:.85; }
@@ -95,19 +77,15 @@
 .cr-panel{
   position: relative;
   overflow: hidden;
-
   background: linear-gradient(180deg, var(--sr-panelA), var(--sr-panelB));
   border: 1px solid var(--sr-borderSoft);
   border-radius: var(--sr-r);
   box-shadow: var(--sr-shadow);
-
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-
   transform: translateZ(0);
 }
 
-/* inner highlight */
 .cr-panel::after{
   content:"";
   position:absolute;
@@ -116,26 +94,20 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
 }
 
-/* shimmer sweep removed for consistency */
 .cr-panel::before{ display: none; }
 
-/* =========================================================
-   Header cap (glow underline + hover polish)
-   ========================================================= */
-
+/* ── Header cap ── */
 .cr-head{
   font-family: 'Syne', sans-serif;
   position: relative;
   padding: 1.15rem 1.4rem;
   margin: 0;
-
   background: linear-gradient(180deg, rgba(0,193,222,.18), rgba(0,193,222,.06));
   color: var(--sr-cyan);
   font-weight: 900;
-  font-size: 1.35rem;
+  font-size: clamp(1.1rem, 3vw, 1.35rem);
   letter-spacing: .25px;
   line-height: 1.2;
-
   border-bottom: 1px solid rgba(255,255,255,.08);
   box-shadow: inset 0 -1px 0 rgba(255,255,255,.07);
   text-shadow: 0 10px 24px rgba(0,0,0,.35);
@@ -152,10 +124,7 @@
   opacity: .95;
 }
 
-/* =========================================================
-   Body wrapper
-   ========================================================= */
-
+/* ── Body wrapper ── */
 .cr-body{
   background:
     radial-gradient(1000px 420px at 20% 0%, rgba(0,193,222,.07), transparent 60%),
@@ -163,7 +132,6 @@
   padding: 1.1rem 1.25rem 1.25rem;
 }
 
-/* If markup doesn't include .cr-body */
 .cr-panel .cr-list,
 .cr-panel .cr-status,
 .cr-panel .cr-empty{
@@ -171,10 +139,7 @@
   padding: 0;
 }
 
-/* =========================================================
-   Loading / Status pill
-   ========================================================= */
-
+/* ── Loading / Status pill ── */
 @keyframes srLoadingPulse{
   0%,100%{ opacity:.75; transform: translateY(0); }
   50%{ opacity:1; transform: translateY(-2px); }
@@ -190,7 +155,6 @@
   animation: srLoadingPulse 1.4s ease-in-out infinite;
 }
 
-/* Empty state */
 .cr-empty{
   text-align: center;
   color: var(--sr-muted);
@@ -203,26 +167,14 @@
   min-height: 80px;
 }
 
-/* =========================================================
-   Grid list
-   ========================================================= */
-
+/* ── Grid list ── */
 .cr-list{
   display: grid;
   gap: 1rem;
   grid-template-columns: 1fr;
 }
-@media (min-width: 700px){
-  .cr-list{ grid-template-columns: repeat(2, 1fr); }
-}
-@media (min-width: 1100px){
-  .cr-list{ grid-template-columns: repeat(3, 1fr); }
-}
 
-/* =========================================================
-   Cards (hover lift + glow ring + sheen)
-   ========================================================= */
-
+/* ── Cards ── */
 @keyframes srSheen{
   0%{ transform: translateX(-35%) rotate(10deg); opacity:0; }
   25%{ opacity:.22; }
@@ -233,23 +185,18 @@
 .cr-card{
   position: relative;
   overflow: hidden;
-
   display: flex;
   flex-direction: column;
   gap: .9rem;
-
   background:
     radial-gradient(800px 280px at 20% 0%, rgba(0,193,222,.06), transparent 60%),
     linear-gradient(180deg, rgba(18,24,38,.96), rgba(10,14,30,.96));
-
   border: 1px solid rgba(0,193,222,.12);
   border-radius: var(--sr-r2);
   padding: 1rem 1rem .95rem;
-
   box-shadow:
     0 14px 34px rgba(0,0,0,.45),
     inset 0 1px 0 rgba(255,255,255,.05);
-
   transition:
     transform .22s var(--sr-ease),
     box-shadow .22s var(--sr-ease),
@@ -257,7 +204,6 @@
     filter .22s ease;
 }
 
-/* glow ring */
 .cr-card::before{
   content:"";
   position:absolute;
@@ -269,7 +215,6 @@
   box-shadow: 0 0 0 1px rgba(0,193,222,.18), 0 18px 48px rgba(0,193,222,.10);
 }
 
-/* sheen streak on hover */
 .cr-card::after{
   content:"";
   position:absolute;
@@ -296,7 +241,6 @@
   animation: srSheen 1.15s var(--sr-ease);
 }
 
-/* Meta */
 .cr-meta{
   font-family: 'DM Sans', sans-serif;
   display: grid;
@@ -310,7 +254,6 @@
   text-shadow: 0 10px 20px rgba(0,0,0,.25);
 }
 
-/* Actions */
 .cr-actions{
   margin-top: .5rem;
   display: flex;
@@ -318,43 +261,33 @@
   flex-wrap: wrap;
 }
 
-/* =========================================================
-   Buttons (brand shine + consistent hover)
-   ========================================================= */
-
+/* ── Buttons ── */
 @keyframes srBtnShine{
   0%{ transform: translateX(-70%) rotate(8deg); opacity:.55; }
   45%{ opacity:.85; }
   100%{ transform: translateX(70%) rotate(8deg); opacity:.55; }
 }
 
-/* Approve (teal brand like rest of app) */
 .cr-approve{
   position: relative;
   overflow: hidden;
-
   background: linear-gradient(180deg, rgba(0,193,222,.95), rgba(0,140,165,.95));
   color: #fff;
-
   padding: .58rem .98rem;
   border-radius: 999px;
   border: 0;
   cursor: pointer;
   font-weight: 900;
-
+  font-family: 'DM Sans', sans-serif;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-
   box-shadow:
     0 16px 36px rgba(0,193,222,.16),
     0 10px 26px rgba(0,0,0,.40),
     inset 0 1px 0 rgba(255,255,255,.12);
-
-  transition:
-    transform .08s ease,
-    box-shadow .18s ease,
-    filter .18s ease;
+  transition: transform .08s ease, box-shadow .18s ease, filter .18s ease;
+  white-space: nowrap;
 }
 
 .cr-approve::before{
@@ -366,47 +299,31 @@
   animation: srBtnShine 3.8s ease-in-out infinite;
 }
 
-.cr-approve:hover{
-  transform: translateY(-1px);
-  filter: brightness(1.03);
-  box-shadow:
-    0 20px 46px rgba(0,193,222,.20),
-    0 12px 30px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.14);
-}
-
+.cr-approve:hover{ transform: translateY(-1px); filter: brightness(1.03); }
 .cr-approve:active{ transform: translateY(1px); }
 
-/* Reject (red, premium) */
 .cr-reject{
   position: relative;
   overflow: hidden;
-
   background: linear-gradient(180deg, #ef4444, #c53030);
   color: #fff;
-
   padding: .58rem .98rem;
   border-radius: 999px;
   border: 0;
   cursor: pointer;
   font-weight: 900;
-
+  font-family: 'DM Sans', sans-serif;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-
   box-shadow:
     0 16px 36px rgba(229,62,62,.16),
     0 10px 26px rgba(0,0,0,.40),
     inset 0 1px 0 rgba(255,255,255,.10);
-
-  transition:
-    transform .08s ease,
-    box-shadow .18s ease,
-    filter .18s ease;
+  transition: transform .08s ease, box-shadow .18s ease, filter .18s ease;
+  white-space: nowrap;
 }
 
-/* subtle shine on reject too */
 .cr-reject::before{
   content:"";
   position:absolute;
@@ -417,20 +334,8 @@
   opacity: .85;
 }
 
-.cr-reject:hover{
-  transform: translateY(-1px);
-  filter: brightness(1.02);
-  box-shadow:
-    0 20px 46px rgba(229,62,62,.20),
-    0 12px 30px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.12);
-}
-
+.cr-reject:hover{ transform: translateY(-1px); filter: brightness(1.02); }
 .cr-reject:active{ transform: translateY(1px); }
-
-/* =========================================================
-   Focus rings (consistent across app)
-   ========================================================= */
 
 .cr-approve:focus-visible,
 .cr-reject:focus-visible,
@@ -443,8 +348,39 @@
 }
 
 /* =========================================================
-   Reduced motion support
-   ========================================================= */
+   RESPONSIVE
+========================================================= */
+
+/* Tablet (1024px) */
+@media (min-width: 700px){
+  .cr-list{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1100px){
+  .cr-list{ grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1024px){
+  .cr-wrap{ padding: 1.75rem .875rem; }
+}
+
+/* Small tablet (768px) */
+@media (max-width: 768px){
+  .cr-wrap{ padding: 1.25rem .75rem; }
+  .cr-body{ padding: .875rem 1rem 1rem; }
+  .cr-head{ font-size: 1.1rem; padding: 1rem 1.1rem; }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px){
+  .cr-wrap{ padding: .875rem .5rem; }
+  .cr-panel{ border-radius: 16px; }
+  .cr-head{ font-size: 1rem; padding: .875rem 1rem; border-radius: 16px 16px 0 0; }
+  .cr-body{ padding: .75rem .875rem .875rem; }
+  .cr-list{ gap: .75rem; }
+  .cr-card{ padding: .875rem .875rem .8rem; border-radius: 14px; }
+  .cr-actions{ gap: .5rem; }
+  .cr-approve, .cr-reject{ padding: .5rem .85rem; font-size: .88rem; }
+}
 
 @media (prefers-reduced-motion: reduce){
   .cr-page::before,
@@ -452,13 +388,8 @@
   .cr-card::after,
   .cr-approve::before,
   .cr-reject::before,
-  .cr-status{
-    animation: none !important;
-  }
-
+  .cr-status{ animation: none !important; }
   .cr-card,
   .cr-approve,
-  .cr-reject{
-    transition: none !important;
-  }
+  .cr-reject{ transition: none !important; }
 }

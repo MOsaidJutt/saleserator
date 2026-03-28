@@ -51,20 +51,22 @@ export default function LeaderboardUser() {
       <Navbar />
       <div className="leaderboard-user-page">
         <div className="leaderboard-user-content">
-          <h1 className="page-title">
-            User Activity
-            {user && (
-              <span className="subtitle">
-                {' '}
-                – {user.name} ({user.email})
-              </span>
-            )}
-          </h1>
-          <Link to={`/${slug}/admin/leaderboard`} className="lb-back-btn">
-            ← Back to Leaderboard
-          </Link>
+          {/* Title row: title left, back-btn top-right */}
+          <div className="title-row">
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <h1 className="page-title">User Activity</h1>
+              {user && (
+                <span className="subtitle">
+                  {user.name} ({user.email})
+                </span>
+              )}
+            </div>
+            <Link to={`/${slug}/admin/leaderboard`} className="lb-back-btn">
+              ← Back to Leaderboard
+            </Link>
+          </div>
 
-          {/* Filter bar matching the Leaderboard Page */}
+          {/* Filter bar */}
           <div className="lb-filter-container">
             <div>
               <label className="lb-filter-label">Start</label>
@@ -96,76 +98,80 @@ export default function LeaderboardUser() {
           {/* Activity Breakdown Table */}
           <div className="card">
             <div className="card-header">Activity Breakdown</div>
-            <table className="user-table">
-              <thead>
-                <tr>
-                  <th>Activity Type</th>
-                  <th className="right">Count</th>
-                  <th className="right">Total Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                {breakdown.map((row) => (
-                  <tr key={row.activity_type}>
-                    <td>{row.activity_type}</td>
-                    <td className="right">{row.count}</td>
-                    <td className="right">{row.total_points}</td>
-                  </tr>
-                ))}
-                {!breakdown.length && (
+            <div className="table-scroll">
+              <table className="user-table">
+                <thead>
                   <tr>
-                    <td colSpan="3" className="empty">
-                      No activity in this range
-                    </td>
+                    <th>Activity Type</th>
+                    <th className="right">Count</th>
+                    <th className="right">Total Points</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {breakdown.map((row) => (
+                    <tr key={row.activity_type}>
+                      <td>{row.activity_type}</td>
+                      <td className="right">{row.count}</td>
+                      <td className="right">{row.total_points}</td>
+                    </tr>
+                  ))}
+                  {!breakdown.length && (
+                    <tr>
+                      <td colSpan="3" className="empty">
+                        No activity in this range
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Recent Activities Table */}
           <div className="card">
             <div className="card-header">Recent Activities</div>
-            <table className="user-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Activity Type</th>
-                  <th>Value</th>
-                  <th className="right">Points</th>
-                  <th>Last Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent
-                  .slice(
-                    (recentPage - 1) * RECENT_PER_PAGE,
-                    recentPage * RECENT_PER_PAGE,
-                  )
-                  .map((a) => (
-                    <tr key={a.activity_id}>
-                      <td>
-                        {a.date_logged &&
-                          new Date(a.date_logged).toLocaleDateString()}
-                      </td>
-                      <td>{a.activity_type}</td>
-                      <td>{a.value}</td>
-                      <td className="right">{a.points}</td>
-                      <td>
-                        {a.updated_at &&
-                          new Date(a.updated_at).toLocaleString()}
+            <div className="table-scroll">
+              <table className="user-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Activity Type</th>
+                    <th>Value</th>
+                    <th className="right">Points</th>
+                    <th>Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent
+                    .slice(
+                      (recentPage - 1) * RECENT_PER_PAGE,
+                      recentPage * RECENT_PER_PAGE,
+                    )
+                    .map((a) => (
+                      <tr key={a.activity_id}>
+                        <td>
+                          {a.date_logged &&
+                            new Date(a.date_logged).toLocaleDateString()}
+                        </td>
+                        <td>{a.activity_type}</td>
+                        <td>{a.value}</td>
+                        <td className="right">{a.points}</td>
+                        <td>
+                          {a.updated_at &&
+                            new Date(a.updated_at).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  {!recent.length && (
+                    <tr>
+                      <td colSpan="5" className="empty">
+                        No recent activities
                       </td>
                     </tr>
-                  ))}
-                {!recent.length && (
-                  <tr>
-                    <td colSpan="5" className="empty">
-                      No recent activities
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
             {recent.length > RECENT_PER_PAGE && (
               <div className="lb-pagination">
                 <button

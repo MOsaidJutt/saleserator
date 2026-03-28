@@ -1,17 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 /* =========================================================
-   COMPANY SETTINGS — Extracted from inline styles
-   Consistent navy/cyan theme
+   COMPANY SETTINGS — Consistent navy/cyan theme
 ========================================================= */
 
 .cs-page {
   font-family: 'DM Sans', sans-serif;
+  padding: 0 1rem 2rem;
+  box-sizing: border-box;
+  /* Kill spurious horizontal scrollbar */
+  overflow-x: hidden;
 }
 
 .cs-title {
   font-family: 'Syne', sans-serif;
-  font-size: 1.75rem;
+  font-size: clamp(1.4rem, 5vw, 1.75rem);
   font-weight: 800;
   text-align: center;
   background: linear-gradient(90deg, #ffffff 0%, rgba(0,193,222,.9) 100%);
@@ -19,19 +22,23 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 1.5rem 0 1rem;
+  word-break: break-word;
 }
 
 /* ── Section wrappers ── */
 .cs-section {
   max-width: 70rem;
-  margin: 0 auto 2rem;
+  /* Side margin ensures section never touches screen edge */
+  margin: 0 auto 1.5rem;
   background: #0d1b2e;
   border: 1px solid rgba(0, 193, 222, .2);
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,.5);
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
+
+/* Cyan top line — inside the border so it doesn't escape */
 .cs-section::after {
   content: '';
   position: absolute;
@@ -39,6 +46,7 @@
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(0,193,222,.55), transparent);
   pointer-events: none;
+  border-radius: 20px 20px 0 0;
 }
 
 /* ── Section heading ── */
@@ -46,10 +54,11 @@
   padding: 1.1rem 1.5rem;
   background: rgba(0, 193, 222, .07);
   border-bottom: 1px solid rgba(0, 193, 222, .12);
+  border-radius: 20px 20px 0 0;
 }
 .cs-section-title {
   font-family: 'Syne', sans-serif;
-  font-size: 1.3rem;
+  font-size: clamp(1.1rem, 3vw, 1.3rem);
   font-weight: 700;
   color: #00c1de;
   margin: 0 0 2px;
@@ -69,7 +78,7 @@
 /* ── Activity/rank rule cards grid ── */
 .cs-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
 }
 
@@ -118,6 +127,7 @@
   text-align: center;
   outline: none;
   transition: border-color .2s ease, box-shadow .2s ease;
+  box-sizing: border-box;
 }
 .cs-input:focus {
   border-color: rgba(0,193,222,.5);
@@ -182,8 +192,11 @@
 .cs-message {
   font-family: 'DM Sans', sans-serif;
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  bottom: 1.5rem;
+  right: 1rem;
+  left: 1rem;
+  max-width: 360px;
+  margin: 0 auto;
   padding: .75rem 1.25rem;
   border-radius: 12px;
   font-size: 0.9rem;
@@ -199,7 +212,39 @@
 .cs-message--success { background: #0d1b2e; border: 1px solid rgba(34,197,94,.4); color: #86efac; }
 .cs-message--error   { background: #0d1b2e; border: 1px solid rgba(239,68,68,.4); color: #fca5a5; }
 
-@media (max-width: 640px) {
-  .cs-cards-grid { grid-template-columns: 1fr; }
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+/* Tablet (1024px) */
+@media (max-width: 1024px) {
+  /* Keep auto side margins so section stays centred with breathing room */
+  .cs-section { margin: 0 auto 1.25rem; }
+  .cs-section-body { padding: 1rem; }
+  .cs-cards-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+
+/* Small tablet (768px) */
+@media (max-width: 768px) {
+  .cs-page { padding: 0 .875rem 1.5rem; }
+  .cs-section { margin: 0 auto 1.1rem; }
+  .cs-section-head { padding: .9rem 1.1rem; }
+  .cs-section-body { padding: .875rem; }
+  .cs-cards-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; }
+  .cs-card { padding: .875rem; }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+  /* Enough padding so section never touches screen edge */
+  .cs-page { padding: 0 .75rem 1.5rem; }
+  .cs-section { border-radius: 16px; margin: 0 auto 1rem; }
+  .cs-section-head { border-radius: 16px 16px 0 0; padding: .8rem 1rem; }
+  .cs-section-body { padding: .75rem; }
+  .cs-cards-grid { grid-template-columns: 1fr; gap: .625rem; }
   .cs-card-row { gap: .5rem; }
+  .cs-input { width: 80px; }
+  .cs-input--wide { width: 110px; }
+  .cs-card { border-radius: 12px; }
+  .cs-message { left: .75rem; right: .75rem; max-width: none; }
 }

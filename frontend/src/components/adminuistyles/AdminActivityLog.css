@@ -2,27 +2,16 @@
 
 /* =========================================================
    ADMIN ACTIVITY LOG PAGE — Saleserator Premium (Navy/Cyan)
-   - No page horizontal scroll
-   - Responsive filter grid
-   - Premium table container + sticky header
    ========================================================= */
-
-/* ---------- Global hard stop for horizontal scroll ---------- */
-html, body {
-  max-width: 100%;
-  overflow-x: hidden;
-}
 
 /* ---------- Page shell ---------- */
 .activity-page-container {
   width: 100%;
-  max-width: 76rem;              /* slightly wider than before */
+  max-width: 76rem;
   margin: 0 auto;
-  min-height: 100vh;
-  display: grid;
-  gap: 1rem;
-  padding: 18px 14px;
+  padding: 18px 1rem;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Main panel */
@@ -31,54 +20,48 @@ html, body {
   max-width: 1180px;
   margin: 12px auto 24px;
   padding: 26px;
-  background:
-    linear-gradient(180deg, rgba(10, 16, 34, 0.92), rgba(7, 11, 24, 0.92));
+  background: linear-gradient(180deg, rgba(10,16,34,.92), rgba(7,11,24,.92));
   border-radius: 22px;
-  border: 1px solid rgba(0, 193, 222, 0.16);
-  box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.75),
-    0 0 0 1px rgba(255,255,255,0.04) inset;
+  border: 1px solid rgba(0,193,222,.16);
+  box-shadow: 0 30px 90px rgba(0,0,0,.75), inset 0 0 0 1px rgba(255,255,255,.04);
   position: relative;
+  /* visible so dropdowns can escape and no extra scrollbar appears */
   overflow: visible;
+  box-sizing: border-box;
 }
 
-/* subtle premium glow */
 .activity-page-content::before{
   content:"";
   position:absolute;
-  inset:-2px;
+  inset:0;
   background:
     radial-gradient(900px 280px at 18% 0%, rgba(0,193,222,.14), transparent 55%),
     radial-gradient(700px 240px at 82% 10%, rgba(56,189,248,.10), transparent 55%);
   pointer-events:none;
+  border-radius: 22px;
+  z-index: 0;
 }
-
-/* keep children above glow */
-.activity-page-content > *{
-  position: relative;
-  z-index: 1;
-}
+.activity-page-content > *{ position: relative; z-index: 1; }
 
 /* ---------- Title ---------- */
 .page-title {
   font-family: 'Syne', sans-serif;
   text-align: center;
-  font-size: 28px;
+  font-size: clamp(18px, 4vw, 28px);
   font-weight: 800;
-  letter-spacing: 0.2px;
   color: #00c1de;
   margin: 6px 0 18px;
-  text-shadow: 0 0 24px rgba(56, 189, 248, 0.30);
+  text-shadow: 0 0 24px rgba(56,189,248,.30);
+  word-break: break-word;
 }
 
 /* =========================================================
-   FILTER BAR (Responsive Grid)
-   - avoids fixed nth-child widths that break on smaller screens
+   FILTER BAR — stacks to single column on mobile
    ========================================================= */
 .filter-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   margin: 6px 0 24px;
   width: 100%;
   box-sizing: border-box;
@@ -86,45 +69,34 @@ html, body {
   z-index: 10;
 }
 
-/* Row 1: all 5 inputs — date inputs slightly smaller, type dropdown slightly wider */
+/* Row 1: filter inputs — responsive grid */
 .filter-inputs-row {
   display: grid;
+  /* 5 columns on wide, collapses on smaller screens */
   grid-template-columns: 1fr 1fr 1fr 1fr 1.4fr;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
   align-items: end;
+  box-sizing: border-box;
 }
-
-.filter-inputs-row > div {
-  min-width: 0;
-}
+.filter-inputs-row > div { min-width: 0; }
 
 /* Row 2: buttons */
 .filter-btn-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-}
-
-@media (max-width: 900px) {
-  .filter-inputs-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 520px) {
-  .filter-inputs-row {
-    grid-template-columns: 1fr;
-  }
+  flex-wrap: wrap;
 }
 
 /* Labels */
 .filter-label {
   font-family: 'DM Sans', sans-serif;
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: rgba(197, 240, 255, 0.92);
-  margin: 0 0 6px;
+  color: rgba(197,240,255,.92);
+  margin: 0 0 5px;
 }
 
 /* Inputs */
@@ -132,571 +104,273 @@ html, body {
   font-family: 'DM Sans', sans-serif;
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.09);
-  background: rgba(16, 24, 40, 0.78);
-  color: rgba(241,245,249,0.96);
+  padding: 11px 13px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: rgba(16,24,40,.78);
+  color: rgba(241,245,249,.96);
   font-size: 14px;
   outline: none;
-  transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  transition: box-shadow .2s ease, border-color .2s ease;
 }
-
 .filter-input:focus {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: rgba(0, 193, 222, 0.60);
-  box-shadow:
-    0 0 0 3px rgba(0, 193, 222, 0.18),
-    0 0 18px rgba(0, 193, 222, 0.22);
+  background: rgba(15,23,42,.86);
+  border-color: rgba(0,193,222,.60);
+  box-shadow: 0 0 0 3px rgba(0,193,222,.18), 0 0 18px rgba(0,193,222,.22);
 }
 
-/* cyan calendar icon */
 input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(60%) sepia(100%) saturate(500%) hue-rotate(180deg);
   opacity: 1;
 }
 
 /* =========================================================
-   CUSTOM DROPDOWN (Type)
+   CUSTOM DROPDOWN
    ========================================================= */
 .custom-dropdown {
   position: relative;
   width: 100%;
   font-size: 14px;
-  margin-top: 0; /* align with other inputs */
 }
-
 .dropdown-selected {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
-  background: rgba(16, 24, 40, 0.78);
-  color: rgba(241,245,249,0.96);
-  border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 16px;
+  padding: 11px 13px;
+  background: rgba(16,24,40,.78);
+  color: rgba(241,245,249,.96);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 14px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  gap: 8px;
+  transition: box-shadow .2s ease, border-color .2s ease;
 }
-
 .custom-dropdown.open .dropdown-selected,
 .dropdown-selected:focus-within {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: rgba(0, 193, 222, 0.60);
-  box-shadow:
-    0 0 0 3px rgba(0, 193, 222, 0.18),
-    0 0 18px rgba(0, 193, 222, 0.22);
+  background: rgba(15,23,42,.86);
+  border-color: rgba(0,193,222,.60);
+  box-shadow: 0 0 0 3px rgba(0,193,222,.18), 0 0 18px rgba(0,193,222,.22);
 }
-
-/* SVG Icon Arrow */
-.dropdown-arrow svg {
-  fill: #00c1de;
-  transition: transform 0.25s ease;
-  transform: scale(1.3);
-  margin-right: 4px;
-}
-
-.custom-dropdown.open .dropdown-arrow svg {
-  transform: rotate(180deg) scale(1.3);
-}
-
+.dropdown-arrow svg { fill: #00c1de; transition: transform .25s ease; }
+.custom-dropdown.open .dropdown-arrow svg { transform: rotate(180deg); }
 .dropdown-options {
   position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  right: 0;
+  top: calc(100% + 8px);
+  left: 0; right: 0;
   display: none;
-  background: rgba(10, 16, 34, 0.98);
-  border: 1px solid rgba(0, 193, 222, 0.18);
-  border-radius: 16px;
+  background: rgba(10,16,34,.98);
+  border: 1px solid rgba(0,193,222,.18);
+  border-radius: 14px;
   max-height: 180px;
   overflow-y: auto;
   z-index: 9999;
-  padding: 8px;
-  box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+  padding: 6px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.55);
+  list-style: none;
+  margin: 0;
 }
-
-.custom-dropdown.open .dropdown-options {
-  display: block;
-}
-
+.custom-dropdown.open .dropdown-options { display: block; }
 .dropdown-options li {
-  padding: 10px 12px;
-  color: rgba(241,245,249,0.96);
+  padding: 9px 11px;
+  color: rgba(241,245,249,.96);
   cursor: pointer;
-  border-radius: 12px;
-  transition: background-color 0.18s ease, transform 0.18s ease;
+  border-radius: 10px;
+  transition: background-color .18s ease;
 }
-
-.dropdown-options li:hover {
-  background: rgba(0, 193, 222, 0.14);
-  transform: translateX(4px);
-}
-
-/* Hide scrollbar but keep scroll */
-.custom-dropdown .dropdown-options::-webkit-scrollbar { width: 0px; background: transparent; }
-.custom-dropdown .dropdown-options::-webkit-scrollbar-thumb { background: transparent; border: none; }
+.dropdown-options li:hover { background: rgba(0,193,222,.14); }
 .custom-dropdown .dropdown-options { scrollbar-width: none; }
+.custom-dropdown .dropdown-options::-webkit-scrollbar { width: 0; }
 
 /* =========================================================
-   FILTER BUTTONS ROW (spans full width)
+   FILTER BUTTONS
    ========================================================= */
 .filter-actions {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-start;
-  margin-top: 2px;
 }
-
 .filter-button {
   font-family: 'DM Sans', sans-serif;
   background: linear-gradient(90deg, #0ea5e9, #00c1de);
   color: #fff;
   border: none;
   border-radius: 999px;
-  padding: 12px 18px;
+  padding: 11px 18px;
   cursor: pointer;
   font-weight: 800;
-  letter-spacing: 0.2px;
-  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
-  width: auto;
+  transition: transform .12s ease, box-shadow .2s ease;
+  white-space: nowrap;
 }
-
-.filter-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(0,193,222,0.16), 0 18px 38px rgba(0,0,0,0.45);
-  filter: brightness(1.03);
-}
-
-.filter-button:active {
-  transform: translateY(1px);
-}
+.filter-button:hover { transform: translateY(-1px); box-shadow: 0 0 0 3px rgba(0,193,222,.16), 0 18px 38px rgba(0,0,0,.45); }
+.filter-button:active { transform: translateY(1px); }
 
 /* =========================================================
-   TABLE CONTAINER (Premium)
-   - Only this area can scroll horizontally if needed
+   TABLE CONTAINER — mirrors leaderboard user pattern exactly
    ========================================================= */
 .activity-table-container {
+  background: linear-gradient(180deg, rgba(10,16,34,.72), rgba(7,11,24,.72));
+  border: 1px solid rgba(0,193,222,.16);
+  border-radius: 18px;
+  box-shadow: 0 22px 60px rgba(0,0,0,.55);
+  /* overflow:visible so the scroll wrapper inside does the work */
+  overflow: visible;
   width: 100%;
   box-sizing: border-box;
-  border-radius: 18px;
-  border: 1px solid rgba(0, 193, 222, 0.16);
-  background: linear-gradient(180deg, rgba(10,16,34,0.72), rgba(7,11,24,0.72));
-  box-shadow:
-    0 22px 60px rgba(0,0,0,0.55),
-    0 0 0 1px rgba(255,255,255,0.04) inset;
-  overflow: visible; /* allow dropdown to escape */
 }
 
-/* Scroll wrapper (prevents page horizontal scroll) */
+/* Exact same pattern as .leaderboard-user-page .table-scroll */
 .activity-table-scroll {
-  width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  border-radius: 18px;
+  width: 100%;
+  /* Only show scrollbar track when actually overflowing */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,193,222,.35) transparent;
 }
+.activity-table-scroll::-webkit-scrollbar { height: 5px; }
+.activity-table-scroll::-webkit-scrollbar-track { background: transparent; }
+.activity-table-scroll::-webkit-scrollbar-thumb { background: rgba(0,193,222,.4); border-radius: 999px; }
+.activity-table-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,193,222,.6); }
 
-/* nicer scrollbar */
-.activity-table-scroll::-webkit-scrollbar { height: 10px; }
-.activity-table-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
-.activity-table-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 193, 222, 0.28);
-  border-radius: 999px;
-}
-.activity-table-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 193, 222, 0.40);
-}
-
-/* Table */
+/* =========================================================
+   TABLE STYLES
+   ========================================================= */
 .admin-activity-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0;      /* clean grid */
+  border-spacing: 0;
   table-layout: auto;
-  min-width: 980px;       /* forces inner scroll on small screens instead of page overflow */
+  /* Wide enough to show all columns incl. DELETED + ACTIONS — scroll wrapper handles overflow */
+  min-width: 980px;
 }
-
-.admin-activity-table th,
-.admin-activity-table td {
+.admin-activity-table thead tr { background: rgba(15,22,36,.92); }
+.admin-activity-table th {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: rgba(0,193,222,.9);
   padding: 14px 16px;
   text-align: left;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(0,193,222,.14);
   white-space: nowrap;
-}
-
-.admin-activity-table th {
+  background: rgba(15,22,36,.92);
   position: sticky;
   top: 0;
   z-index: 5;
-  background: rgba(15, 22, 36, 0.92);
-  color: #00c1de;
-  font-weight: 900;
-  letter-spacing: 0.25px;
   backdrop-filter: blur(10px);
 }
-
 .admin-activity-table td {
-  background: rgba(16, 24, 40, 0.40);
-  color: rgba(241,245,249,0.96);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: rgba(241,245,249,.96);
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  vertical-align: middle;
+  white-space: nowrap;
+  background: rgba(16,24,40,.40);
 }
+.admin-activity-table td:first-child { color: rgba(226,247,255,.95); }
+.admin-activity-table tbody tr:hover td { background: rgba(30,41,59,.58); }
 
-.admin-activity-table tr:hover td {
-  background: rgba(30, 41, 59, 0.58);
-}
-
-/* Make first col look slightly emphasized */
-.admin-activity-table td:first-child {
-  color: rgba(226, 247, 255, 0.95);
-}
-
-/* =========================================================
-   TABLE ACTION BUTTONS
-   ========================================================= */
+/* ── Action buttons — restored original class names ── */
 .edit-button,
 .delete-button {
+  font-family: 'DM Sans', sans-serif;
   border: none;
   border-radius: 999px;
-  padding: 10px 14px;
+  padding: 7px 16px;
   cursor: pointer;
   font-weight: 900;
-  letter-spacing: 0.2px;
-  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  font-size: 13px;
+  letter-spacing: .2px;
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+  white-space: nowrap;
 }
-
 .edit-button {
   background: linear-gradient(90deg, #0ea5e9, #00c1de);
   color: #fff;
-  margin-right: 10px;
+  margin-right: 8px;
 }
-
 .delete-button {
   background: linear-gradient(90deg, #ef4444, #b91c1c);
   color: #fff;
 }
-
 .edit-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(0,193,222,0.16), 0 18px 38px rgba(0,0,0,0.45);
-  filter: brightness(1.03);
+  box-shadow: 0 0 0 3px rgba(0,193,222,.16), 0 12px 28px rgba(0,0,0,.4);
+  filter: brightness(1.04);
 }
-
 .delete-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(248,56,56,0.14), 0 18px 38px rgba(0,0,0,0.45);
-  filter: brightness(1.03);
+  box-shadow: 0 0 0 3px rgba(248,56,56,.14), 0 12px 28px rgba(0,0,0,.4);
+  filter: brightness(1.04);
 }
-
 .edit-button:active,
-.delete-button:active {
-  transform: translateY(1px);
-}
+.delete-button:active { transform: translateY(1px); }
 
-/* =========================================================
-   "No activities"
-   ========================================================= */
-.no-activities {
-  padding: 18px;
-  text-align: center;
-  color: rgba(159,176,199,0.9);
-}
-
-/* =========================================================
-   MODAL (Fixed + Body lock + Proper scroll)
-   ========================================================= */
-
-/* When modal opens, add this class to body (see JS below) */
-body.modal-open {
-  overflow: hidden;
-}
-
-/* Backdrop */
-.edit-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.62);
-  z-index: 999;
-
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-
-  padding: 26px 14px;
-  box-sizing: border-box;
-
-  overflow: hidden; /* IMPORTANT: stop outer scroll */
-}
-
-/* Modal shell */
-.edit-modal-content {
-  width: min(1100px, 100%);
-  max-height: calc(100vh - 140px); /* keep it inside viewport */
-  margin-top: 75px;
-
-  background: linear-gradient(180deg, rgba(10, 27, 43, 0.96), rgba(7, 16, 28, 0.96));
-  border-radius: 22px;
-  border: 1px solid rgba(0, 193, 222, 0.16);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7);
-
-  padding: 22px;
-  box-sizing: border-box;
-
-  overflow: hidden; /* IMPORTANT: modal itself does not scroll */
-}
-
-/* Title */
-.edit-modal h2 {
-  font-size: 24px;
-  color: #00c1de;
-  text-align: center;
-  margin: 0 0 16px;
-  text-shadow: 0 0 20px rgba(56, 189, 248, 0.22);
-}
-
-/* Form layout: body scroll + footer fixed */
-.edit-form{
-  display: flex;
-  flex-direction: column;
-  height: calc(100% - 44px); /* leaves space for h2 margin/padding */
-}
-
-/* Only this part scrolls */
-.edit-modal-body {
-  overflow-y: auto;
-  padding-right: 10px;
-  flex: 1;
-}
-
-/* nicer scrollbar */
-.edit-modal-body::-webkit-scrollbar { width: 10px; }
-.edit-modal-body::-webkit-scrollbar-track { background: transparent; }
-.edit-modal-body::-webkit-scrollbar-thumb {
-  background: rgba(0, 193, 222, 0.26);
-  border-radius: 999px;
-}
-.edit-modal-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 193, 222, 0.40);
-}
-
-/* Your fields grid (you are using form-field, not edit-form-group) */
-.edit-modal-body {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 16px;
-}
-
-/* Make textarea span full width */
-.form-field textarea,
-.form-textarea {
-  grid-column: 1 / -1;
-}
-
-/* Base label */
-.form-field label{
-  display: block;
-  font-size: 14px;
+/* points badge kept for compatibility */
+.points-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Syne', sans-serif;
   font-weight: 700;
-  color: rgba(207, 232, 255, 0.92);
-  margin: 0 0 6px;
+  font-size: 12px;
+  color: #00c1de;
+  background: rgba(0,193,222,.10);
+  border: 1px solid rgba(0,193,222,.20);
+  border-radius: 999px;
+  padding: 2px 9px;
 }
 
-/* Inputs */
-.form-input,
-.form-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(16, 24, 40, 0.70);
-  color: rgba(241,245,249,0.96);
-  font-size: 14px;
-  outline: none;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+.no-activities {
+  text-align: center;
+  color: rgba(190,205,255,.55);
+  padding: 2.5rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
 }
 
-.form-input:focus,
-.form-textarea:focus {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: rgba(0, 193, 222, 0.60);
-  box-shadow:
-    0 0 0 3px rgba(0, 193, 222, 0.18),
-    0 0 18px rgba(0, 193, 222, 0.22);
-}
-
-.form-textarea {
-  min-height: 110px;
-  resize: vertical;
-}
-
-/* Checkbox field: make it look aligned */
-.form-field-checkbox {
-  grid-column: 1 / -1; /* keep it full row to avoid huge white space */
-}
-
-.checkbox-row {
+/* Pagination */
+.pagination {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-top: 6px;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(0,193,222,.08);
+  flex-wrap: wrap;
 }
-
-.checkbox-text{
-  color: rgba(241,245,249,0.92);
-  font-weight: 700;
-  font-size: 14px;
-}
-
-/* ✅ Checkbox styling on YOUR class: form-checkbox (small, not bigger) */
-.form-checkbox {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 16px;      /* smaller */
-  height: 16px;     /* smaller */
-  border-radius: 5px;
-  border: 2px solid rgba(0, 193, 222, 0.6);
-  background: rgba(16, 24, 40, 0.9);
-  cursor: pointer;
-  display: inline-grid;
-  place-items: center;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
-}
-
-.form-checkbox:checked {
-  background: linear-gradient(135deg, #0ea5e9, #00c1de);
-  box-shadow: 0 0 10px rgba(0, 193, 222, 0.55);
-}
-
-.form-checkbox:checked::after {
-  content: "✓";
-  font-size: 11px;
-  color: #02121f;
-  font-weight: 900;
-  line-height: 1;
-}
-
-/* Footer buttons: always visible + RIGHT */
-.edit-modal-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-}
-
-/* Buttons */
-.save-button,
-.cancel-button {
-  border: none;
+.page-btn {
+  font-family: 'DM Sans', sans-serif;
+  padding: .55rem 1.25rem;
   border-radius: 999px;
-  font-weight: 900;
-  letter-spacing: 0.2px;
+  border: 1px solid rgba(0,193,222,.3);
+  background: rgba(0,193,222,.07);
+  color: #00c1de;
+  font-weight: 600;
+  font-size: 0.88rem;
   cursor: pointer;
-  padding: 11px 16px;
-  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  transition: background .15s ease, transform .12s ease;
 }
-
-.save-button {
-  background: linear-gradient(90deg, #0ea5e9, #00c1de);
-  color: #fff;
-}
-
-.cancel-button {
-  background: rgba(255,255,255,0.08);
-  color: rgba(241,245,249,0.92);
-  border: 1px solid rgba(255,255,255,0.10);
-}
-
-.save-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(0,193,222,0.16), 0 18px 38px rgba(0,0,0,0.45);
-  filter: brightness(1.03);
-}
-
-.cancel-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.10), 0 18px 38px rgba(0,0,0,0.45);
-}
-
-.save-button:active,
-.cancel-button:active {
-  transform: translateY(1px);
-}
-/* --- Bottom layout: Edit Reason left, Mark Deleted right, buttons under it --- */
-.modal-bottom-grid{
-  grid-column: 1 / -1; /* full width inside the modal grid */
-  display: grid;
-  grid-template-columns: 1.35fr 0.65fr;
-  gap: 14px 16px;
-  align-items: start;
-}
-
-/* Reason stays on left and spans 2 rows */
-.modal-reason{
-  grid-column: 1;
-  grid-row: 1 / span 2;
-}
-
-/* Mark deleted on right top */
-.modal-deleted{
-  grid-column: 2;
-  grid-row: 1;
-}
-
-/* Buttons on right bottom */
-.modal-actions-right{
-  grid-column: 2;
-  grid-row: 2;
-
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-
-  padding-top: 6px;
-}
-
-/* Ensure textarea does NOT force full row anymore */
-.modal-reason .form-textarea{
-  width: 100%;
-  min-height: 140px;
-}
-
+.page-btn:hover:not(:disabled) { background: rgba(0,193,222,.15); transform: translateY(-1px); }
+.page-btn:disabled { opacity: .4; cursor: not-allowed; }
+.page-info { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: rgba(148,163,184,.8); }
 
 /* =========================================================
-   RESPONSIVE
+   EDIT MODAL
    ========================================================= */
-@media (max-width: 900px) {
-  .activity-page-content { padding: 20px; }
-  .filter-container { grid-template-columns: 1fr; }
-  .edit-modal-body{ grid-template-columns: 1fr; }
-  .edit-form-group { grid-template-columns: 1fr; }
-  .admin-activity-table { min-width: 860px; }
-}
-
-@media (max-width: 520px) {
-  .page-title {
-  font-family: 'Syne', sans-serif; font-size: 22px; }
-  .filter-input {
-  font-family: 'DM Sans', sans-serif; padding: 11px 12px; }
-  .dropdown-selected { padding: 11px 12px; }
-  .admin-activity-table th,
-  .admin-activity-table td { padding: 12px 12px; font-size: 13px; }
-  .admin-activity-table { min-width: 760px; }
-}
-
-
-/* ── Edit modal ── */
 .edit-modal {
   position: fixed !important;
   inset: 0;
   z-index: 9999;
-  background: rgba(2, 6, 23, .8);
+  background: rgba(2,6,23,.8);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -705,17 +379,17 @@ body.modal-open {
   padding: 1.5rem;
   overflow-y: auto;
 }
-
 .edit-modal-content {
   background: #0d1b2e;
-  border: 1px solid rgba(0, 193, 222, .25);
+  border: 1px solid rgba(0,193,222,.25);
   border-radius: 20px;
   padding: 2rem;
   width: 100%;
   max-width: 780px;
-  box-shadow: 0 30px 90px rgba(0, 0, 0, .7);
+  box-shadow: 0 30px 90px rgba(0,0,0,.7);
   position: relative;
   margin: auto;
+  box-sizing: border-box;
 }
 .edit-modal-content::after {
   content: '';
@@ -736,17 +410,8 @@ body.modal-open {
   background-clip: text;
   margin: 0 0 1.5rem;
 }
-
-/* ── Modal body: 2-col grid for top fields ── */
-.edit-modal-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-/* Form fields span both columns by default in the top 2-col grid */
+.edit-modal-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .form-field { display: grid; gap: .4rem; }
-
 .form-field label {
   font-family: 'DM Sans', sans-serif;
   font-size: 0.72rem;
@@ -760,7 +425,7 @@ body.modal-open {
   width: 100%;
   padding: .75rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(0, 193, 222, .2);
+  border: 1px solid rgba(0,193,222,.2);
   background: rgba(255,255,255,.04);
   color: rgba(232,241,255,.9);
   font-size: 0.92rem;
@@ -768,13 +433,9 @@ body.modal-open {
   box-sizing: border-box;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
-.form-input:focus, .form-textarea:focus {
-  border-color: rgba(0,193,222,.5);
-  box-shadow: 0 0 0 3px rgba(0,193,222,.1);
-}
+.form-input:focus, .form-textarea:focus { border-color: rgba(0,193,222,.5); box-shadow: 0 0 0 3px rgba(0,193,222,.1); }
 .form-textarea { min-height: 120px; resize: vertical; }
 
-/* ── Bottom section: reason left, deleted+buttons right ── */
 .modal-bottom-grid {
   grid-column: 1 / -1;
   display: grid;
@@ -782,18 +443,12 @@ body.modal-open {
   gap: 1rem;
   align-items: start;
 }
-.modal-reason   { grid-column: 1; grid-row: 1 / span 2; }
-.modal-deleted  { grid-column: 2; grid-row: 1; }
+.modal-reason { grid-column: 1; grid-row: 1 / span 2; }
+.modal-deleted { grid-column: 2; grid-row: 1; }
 .modal-actions-right {
-  grid-column: 2;
-  grid-row: 2;
-  display: flex;
-  gap: .75rem;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding-top: .5rem;
+  grid-column: 2; grid-row: 2;
+  display: flex; gap: .75rem; align-items: flex-end; justify-content: flex-end; padding-top: .5rem;
 }
-
 .modal-reason .form-textarea { min-height: 140px; }
 
 .checkbox-row { display: flex; align-items: center; gap: .5rem; margin-top: .25rem; }
@@ -808,29 +463,67 @@ body.modal-open {
   font-size: 0.9rem;
   cursor: pointer;
   border: none;
-  transition: transform .12s ease, box-shadow .2s ease;
   white-space: nowrap;
+  transition: transform .12s ease, box-shadow .2s ease;
 }
-.cancel-button {
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.12);
-  color: rgba(232,241,255,.8);
-}
+.cancel-button { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: rgba(232,241,255,.8); }
 .cancel-button:hover { background: rgba(255,255,255,.1); transform: translateY(-1px); }
-.save-button {
-  background: linear-gradient(90deg, #00c1de, #38bdf8);
-  color: rgba(2,6,23,.92);
-}
+.save-button { background: linear-gradient(90deg, #00c1de, #38bdf8); color: rgba(2,6,23,.92); }
 .save-button:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,193,222,.3); }
 
-/* ── Responsive: stack everything on small screens ── */
-@media (max-width: 600px) {
-  .edit-modal { padding: 1rem; align-items: flex-start; }
-  .edit-modal-content { padding: 1.5rem 1.25rem; }
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1024px) {
+  .activity-page-content { padding: 20px; }
+  /* 5-col → 3-col */
+  .filter-inputs-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .activity-page-container { padding: 12px .5rem; }
+  .activity-page-content { padding: 16px 12px; margin: 8px auto 16px; }
+  /* 3-col → 2-col */
+  .filter-inputs-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .page-title { font-size: clamp(17px, 5vw, 22px); }
+}
+
+@media (max-width: 480px) {
+  .activity-page-container { padding: 6px 0; }
+  /* Zero horizontal padding so table container is full viewport width */
+  .activity-page-content {
+    padding: 14px 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin: 0 0 12px;
+  }
+  /* Restore padding for non-table content */
+  .page-title,
+  .filter-container,
+  .filter-btn-row { padding-left: 14px; padding-right: 14px; }
+  /* KEY FIX: single column stacking */
+  .filter-inputs-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 0 14px;
+  }
+  .filter-input, .dropdown-selected { padding: 10px 11px; font-size: 13px; }
+  .filter-label { font-size: 12px; }
+  .filter-button { padding: 10px 14px; font-size: 13px; width: 100%; }
+  .filter-btn-row { flex-direction: column; align-items: stretch; }
+  .page-title { font-size: 18px; margin-bottom: 14px; }
+  .admin-activity-table th,
+  .admin-activity-table td { padding: 11px 13px; font-size: 12px; }
+
+  /* Modal full-width on mobile */
+  .edit-modal { padding: .75rem; align-items: flex-start; }
+  .edit-modal-content { padding: 1.25rem 1rem; border-radius: 16px; }
   .edit-modal-body { grid-template-columns: 1fr; }
   .modal-bottom-grid { grid-template-columns: 1fr; }
   .modal-reason { grid-row: auto; }
   .modal-deleted { grid-column: 1; grid-row: auto; }
   .modal-actions-right { grid-column: 1; grid-row: auto; justify-content: stretch; }
-  .cancel-button, .save-button { flex: 1; }
+  .cancel-button, .save-button { flex: 1; text-align: center; }
 }

@@ -14,7 +14,7 @@ export default function Leaderboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('points'); // Default sorting by points
+  const [sort, setSort] = useState('points');
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ROWS_PER_PAGE = 10;
@@ -23,9 +23,7 @@ export default function Leaderboard() {
     setLoading(true);
     try {
       const response = await api(
-        `/admin/leaderboard?start=${start}&end=${end}&search=${encodeURIComponent(
-          search,
-        )}&sort=${sort}`,
+        `/admin/leaderboard?start=${start}&end=${end}&search=${encodeURIComponent(search)}&sort=${sort}`,
       );
       setItems(response.data.items || []);
       setCurrentPage(1);
@@ -40,9 +38,7 @@ export default function Leaderboard() {
     loadLeaderboard();
   }, [start, end, search, sort]);
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!isDropdownOpen); // Toggle visibility
-  };
+  const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
 
   async function downloadCsv() {
     try {
@@ -61,11 +57,13 @@ export default function Leaderboard() {
   }
 
   return (
-    <div>
+    /* KEY FIX: overflow-x hidden on outermost div stops page-level horizontal scroll */
+    <div style={{ overflowX: 'hidden' }}>
       <Navbar />
       <div className="leaderboard-page-container">
         <div className="leaderboard-page-content">
           <h1 className="page-title">Leaderboard</h1>
+
           <div className="lb-filter-container">
             <div>
               <label className="lb-filter-label">Start</label>
@@ -93,14 +91,10 @@ export default function Leaderboard() {
                 className="lb-filter-input"
               />
             </div>
-
             <div>
               <label className="lb-filter-label">Sort</label>
               <div
-                className={`
-                  custom-dropdown 
-                  ${isDropdownOpen ? 'open' : ''}
-                `}
+                className={`custom-dropdown ${isDropdownOpen ? 'open' : ''}`}
               >
                 <div className="dropdown-selected" onClick={toggleDropdown}>
                   <span>{sort === 'points' ? 'By Points' : 'By Name'}</span>
@@ -110,7 +104,6 @@ export default function Leaderboard() {
                       width="20"
                       height="18"
                       fill="currentColor"
-                      className="bi bi-chevron-down"
                       viewBox="0 0 16 16"
                     >
                       <path d="M1.5 5.5a.5.5 0 0 1 .707-.707L8 9.293l5.793-5.793a.5.5 0 0 1 .707.707L8 10.707 1.5 5.5z" />
@@ -122,7 +115,7 @@ export default function Leaderboard() {
                     key="points"
                     onClick={() => {
                       setSort('points');
-                      setDropdownOpen(false); // Close dropdown after selection
+                      setDropdownOpen(false);
                     }}
                   >
                     By Points
@@ -131,7 +124,7 @@ export default function Leaderboard() {
                     key="name"
                     onClick={() => {
                       setSort('name');
-                      setDropdownOpen(false); // Close dropdown after selection
+                      setDropdownOpen(false);
                     }}
                   >
                     By Name
@@ -199,6 +192,7 @@ export default function Leaderboard() {
                 )}
               </tbody>
             </table>
+
             {items.length > ROWS_PER_PAGE && (
               <div className="lb-pagination">
                 <button
@@ -209,7 +203,7 @@ export default function Leaderboard() {
                   ← Previous
                 </button>
                 <span className="lb-page-info">
-                  Page {currentPage} of{' '}
+                  Page {currentPage} of
                   {Math.ceil(items.length / ROWS_PER_PAGE)}
                 </span>
                 <button

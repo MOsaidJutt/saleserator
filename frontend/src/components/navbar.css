@@ -25,7 +25,7 @@
 /* Prevent body scroll when overlays are open */
 .no-scroll{ overflow:hidden; }
 
-/* Sheen animation (same language as cards) */
+/* Sheen animation */
 @keyframes navSheen{
   0%{ transform: translateX(-35%) rotate(10deg); opacity:0; }
   25%{ opacity:.18; }
@@ -41,7 +41,6 @@
   width:100%;
   z-index:1100;
 
-  /* dark glass */
   background:
     radial-gradient(900px 220px at 18% 0%, rgba(0,193,222,.10), transparent 65%),
     linear-gradient(180deg, rgba(8,12,28,.92), rgba(6,10,22,.84));
@@ -55,7 +54,6 @@
   overflow:hidden;
 }
 
-/* Subtle inner highlight line */
 .nav::before{
   content:"";
   position:absolute;
@@ -64,7 +62,6 @@
   background: linear-gradient(180deg, rgba(255,255,255,.05), transparent 55%);
 }
 
-/* Optional sheen sweep when hovering nav (very subtle) */
 .nav::after{
   content:"";
   position:absolute;
@@ -80,20 +77,23 @@
 
 /* Top row */
 .nav-top{
-  max-width: 74rem;             /* ✅ match dashboard width */
+  max-width: 74rem;
   margin: 0 auto;
   padding: 10px 1.25rem;
-  height: 80px;                 /* matches BASE_NAVBAR_HEIGHT */
+  height: 80px;
   display:flex;
   align-items:center;
-  gap: 20px;
+  gap: 12px;
+  box-sizing: border-box;
 }
 
 /* Left cluster */
 .nav-left{
   display:flex;
   align-items:center;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
 /* Burger */
@@ -103,6 +103,7 @@
   justify-content:center;
   width:44px;
   height:44px;
+  flex-shrink: 0;
   border-radius: 18px;
 
   background: rgba(255,255,255,0.03);
@@ -140,14 +141,17 @@
   gap: 10px;
   cursor:pointer;
   min-width:0;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* Logo */
 .nav-logo{
-  width:56px;
-  height:56px;
+  width:48px;
+  height:48px;
   border-radius: 50%;
   object-fit:cover;
+  flex-shrink: 0;
 
   box-shadow:
     0 10px 26px rgba(0,0,0,.35),
@@ -169,15 +173,14 @@
 /* Title */
 .nav-title{
   font-family: 'Syne', sans-serif;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  max-width: 48vw;
+  min-width: 0;
 
-  /* Gradient text matching home/signin */
   background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 60%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -187,10 +190,11 @@
 
 /* Right side actions */
 .nav-actions{
-  margin-left:auto;
+  margin-left: auto;
   display:flex;
-  gap: 10px;
+  gap: 8px;
   align-items:center;
+  flex-shrink: 0;
 }
 
 /* ===========================
@@ -200,17 +204,17 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:6px;
 
-  padding: 10px 16px;
-  min-height: 40px;
+  padding: 9px 14px;
+  min-height: 38px;
 
   border-radius: 999px;
   border: 1px solid transparent;
 
   font-family: 'DM Sans', sans-serif;
   font-weight: 700;
-  font-size: .95rem;
+  font-size: .88rem;
   line-height: 1;
   white-space: nowrap;
 
@@ -308,39 +312,46 @@
 }
 
 /* ===========================
-   Responsiveness
+   RESPONSIVE
    =========================== */
-@media (max-width:920px){
-  .nav-top{
-    padding: 10px 1rem;
-  }
-  .nav-title{
-    max-width:42vw;
-    font-size: 21px;
-  }
-  .nav-logo{
-    width: 50px;
-    height: 50px;
-  }
-  .nav-btn{
-    padding: 9px 14px;
-    min-height: 38px;
-    font-size: .92rem;
-  }
+
+/* Tablet (1024px) */
+@media (max-width: 1024px){
+  .nav-top{ padding: 10px 1rem; gap: 10px; }
+  .nav-title{ font-size: 20px; }
+  .nav-logo{ width: 44px; height: 44px; }
+  .nav-btn{ padding: 8px 12px; font-size: .84rem; }
 }
 
-@media (max-width:640px){
-  .nav-title{
-    max-width:38vw;
-    font-size: 19px;
-  }
-  .nav-logo{
-    width: 46px;
-    height: 46px;
-  }
+/* Small tablet (768px) — hide button text, show icon-only for home */
+@media (max-width: 768px){
+  .nav-top{ padding: 8px .875rem; gap: 8px; height: 72px; }
+  .nav-title{ font-size: 18px; }
+  .nav-logo{ width: 40px; height: 40px; }
+  .nav-actions{ gap: 6px; }
+  .nav-btn{ padding: 8px 11px; font-size: .82rem; min-height: 36px; }
+
+  /* "Brand Settings" label — shorten on small screens */
+  .nav-btn-solid .nav-btn-label{ display: none; }
+}
+
+/* Mobile (480px) — ultra compact */
+@media (max-width: 480px){
+  .nav-top{ padding: 8px .75rem; gap: 6px; height: 64px; }
+  .nav-logo{ width: 36px; height: 36px; }
+  .nav-title{ font-size: 15px; }
+  .nav-burger{ width: 36px; height: 36px; border-radius: 12px; }
+  .nav-burger svg{ font-size: 18px; }
+  .nav-actions{ gap: 5px; }
   .nav-btn{
-    padding: 8px 12px;
-    min-height: 36px;
-    font-size: .90rem;
+    padding: 7px 10px;
+    font-size: .80rem;
+    min-height: 34px;
+    border-radius: 10px;
+  }
+  /* Collapse "Brand Settings" to just an icon / short text */
+  .nav-btn-solid{
+    padding: 7px 10px;
+    font-size: .75rem;
   }
 }
