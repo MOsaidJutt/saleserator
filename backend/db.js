@@ -1,3 +1,4 @@
+
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -8,14 +9,15 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port:     Number(process.env.DB_PORT || 5432),
 
-  // Prevent idle connection timeouts from crashing the server
+  ssl: { rejectUnauthorized: false },
+  family: 4,
+
   idleTimeoutMillis:    30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
   keepAlive: true,
-  max: 10, // max pool size
+  max: 10,
 });
 
-// Log pool errors instead of crashing
 pool.on('error', (err) => {
   console.error('Unexpected PostgreSQL pool error:', err);
 });
