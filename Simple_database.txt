@@ -1,0 +1,700 @@
+-- Saleserator Database - Supabase Compatible
+-- All COPY commands converted to INSERTs
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+SET row_security = off;
+
+-- TABLES
+
+CREATE TABLE IF NOT EXISTS public.companies (
+    company_id integer NOT NULL,
+    name text NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    slug character varying(255),
+    logo_url text,
+    tagline text,
+    theme jsonb DEFAULT '{}'::jsonb
+);
+CREATE SEQUENCE IF NOT EXISTS public.companies_company_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.companies_company_id_seq OWNED BY public.companies.company_id;
+ALTER TABLE ONLY public.companies ALTER COLUMN company_id SET DEFAULT nextval('public.companies_company_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.users (
+    user_id integer NOT NULL,
+    company_id integer,
+    email text NOT NULL,
+    role character varying(32) DEFAULT 'sales_rep'::character varying,
+    profile_data jsonb,
+    password_hash text,
+    created_at timestamp without time zone DEFAULT now(),
+    name text,
+    CONSTRAINT users_name_len CHECK (((name IS NULL) OR ((length(name) >= 1) AND (length(name) <= 120))))
+);
+CREATE SEQUENCE IF NOT EXISTS public.users_user_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.users_user_id_seq OWNED BY public.users.user_id;
+ALTER TABLE ONLY public.users ALTER COLUMN user_id SET DEFAULT nextval('public.users_user_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.activity_categories (
+    id integer NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+CREATE SEQUENCE IF NOT EXISTS public.activity_categories_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.activity_categories_id_seq OWNED BY public.activity_categories.id;
+ALTER TABLE ONLY public.activity_categories ALTER COLUMN id SET DEFAULT nextval('public.activity_categories_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.activities (
+    activity_id integer NOT NULL,
+    user_id integer,
+    activity_type character varying(50),
+    value integer,
+    date_logged timestamp without time zone DEFAULT now(),
+    points integer DEFAULT 0,
+    edited_by_admin_id integer,
+    edit_reason text,
+    is_deleted boolean DEFAULT false NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    category_id integer
+);
+CREATE SEQUENCE IF NOT EXISTS public.activities_activity_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.activities_activity_id_seq OWNED BY public.activities.activity_id;
+ALTER TABLE ONLY public.activities ALTER COLUMN activity_id SET DEFAULT nextval('public.activities_activity_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.activity_audit_log (
+    id integer NOT NULL,
+    activity_id integer NOT NULL,
+    admin_id integer NOT NULL,
+    action character varying(255) NOT NULL,
+    old_points integer NOT NULL,
+    new_points integer NOT NULL,
+    reason text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+CREATE SEQUENCE IF NOT EXISTS public.activity_audit_log_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.activity_audit_log_id_seq OWNED BY public.activity_audit_log.id;
+ALTER TABLE ONLY public.activity_audit_log ALTER COLUMN id SET DEFAULT nextval('public.activity_audit_log_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.activity_point_rules (
+    activity_type text NOT NULL,
+    points_per_unit integer NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    daily_cap integer,
+    sort_order integer DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    company_id integer NOT NULL,
+    CONSTRAINT activity_point_rules_daily_cap_check CHECK ((daily_cap >= 0)),
+    CONSTRAINT activity_point_rules_points_per_unit_check CHECK ((points_per_unit >= 0))
+);
+
+CREATE TABLE IF NOT EXISTS public.courses (
+    id integer NOT NULL,
+    title text NOT NULL,
+    category text,
+    points integer DEFAULT 0,
+    is_active boolean DEFAULT true,
+    storage_provider character varying(32) DEFAULT 's3'::character varying,
+    media_type character varying(24) DEFAULT 'video'::character varying,
+    asset_url text,
+    thumbnail_url text,
+    duration_seconds integer,
+    created_at timestamp without time zone DEFAULT now(),
+    s3_prefix text,
+    description text,
+    hidden boolean DEFAULT false,
+    company_id integer
+);
+CREATE SEQUENCE IF NOT EXISTS public.courses_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.courses_id_seq OWNED BY public.courses.id;
+ALTER TABLE ONLY public.courses ALTER COLUMN id SET DEFAULT nextval('public.courses_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.course_assets (
+    id integer NOT NULL,
+    course_id integer NOT NULL,
+    kind text DEFAULT 'video'::text NOT NULL,
+    s3_key text NOT NULL,
+    mime_type text,
+    size_bytes bigint,
+    duration_seconds integer,
+    quality_label text,
+    is_default boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now(),
+    file_name text,
+    public_url text
+);
+CREATE SEQUENCE IF NOT EXISTS public.course_assets_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.course_assets_id_seq OWNED BY public.course_assets.id;
+ALTER TABLE ONLY public.course_assets ALTER COLUMN id SET DEFAULT nextval('public.course_assets_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.course_requests (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    course_id integer NOT NULL,
+    status character varying(20) DEFAULT 'pending'::character varying,
+    requested_at timestamp without time zone DEFAULT now()
+);
+CREATE SEQUENCE IF NOT EXISTS public.course_requests_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.course_requests_id_seq OWNED BY public.course_requests.id;
+ALTER TABLE ONLY public.course_requests ALTER COLUMN id SET DEFAULT nextval('public.course_requests_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.leaderboards (
+    leaderboard_id integer NOT NULL,
+    company_id integer,
+    user_id integer,
+    period character varying(50),
+    total_points integer DEFAULT 0,
+    rank integer
+);
+CREATE SEQUENCE IF NOT EXISTS public.leaderboards_leaderboard_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.leaderboards_leaderboard_id_seq OWNED BY public.leaderboards.leaderboard_id;
+ALTER TABLE ONLY public.leaderboards ALTER COLUMN leaderboard_id SET DEFAULT nextval('public.leaderboards_leaderboard_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.password_resets (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    code character varying(12) NOT NULL,
+    expires_at timestamp without time zone NOT NULL,
+    used boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now()
+);
+CREATE SEQUENCE IF NOT EXISTS public.password_resets_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.password_resets_id_seq OWNED BY public.password_resets.id;
+ALTER TABLE ONLY public.password_resets ALTER COLUMN id SET DEFAULT nextval('public.password_resets_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.rank_rules (
+    rank_id integer NOT NULL,
+    name text NOT NULL,
+    min_sp bigint NOT NULL,
+    badge_color text DEFAULT 'cyan'::text,
+    sort_order integer DEFAULT 0 NOT NULL,
+    company_id integer NOT NULL
+);
+CREATE SEQUENCE IF NOT EXISTS public.rank_rules_rank_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.rank_rules_rank_id_seq OWNED BY public.rank_rules.rank_id;
+ALTER TABLE ONLY public.rank_rules ALTER COLUMN rank_id SET DEFAULT nextval('public.rank_rules_rank_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.tv_tokens (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    token_hash text NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    expires_at timestamp without time zone,
+    revoked boolean DEFAULT false,
+    company_id integer
+);
+
+CREATE TABLE IF NOT EXISTS public.user_courses (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    course_id integer NOT NULL,
+    status character varying(20) DEFAULT 'enrolled'::character varying,
+    created_at timestamp without time zone DEFAULT now()
+);
+CREATE SEQUENCE IF NOT EXISTS public.user_courses_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.user_courses_id_seq OWNED BY public.user_courses.id;
+ALTER TABLE ONLY public.user_courses ALTER COLUMN id SET DEFAULT nextval('public.user_courses_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.user_kpis (
+    user_id integer NOT NULL,
+    course_id integer NOT NULL,
+    kpi_key text NOT NULL,
+    value_numeric numeric,
+    value_text text,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.user_points (
+    id integer NOT NULL,
+    user_id integer,
+    period_type character varying(20) NOT NULL,
+    points integer DEFAULT 0,
+    period_start_date date NOT NULL,
+    CONSTRAINT user_points_period_type_check CHECK (((period_type)::text = ANY ((ARRAY['daily'::character varying, 'weekly'::character varying, 'monthly'::character varying, 'all'::character varying])::text[])))
+);
+CREATE SEQUENCE IF NOT EXISTS public.user_points_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.user_points_id_seq OWNED BY public.user_points.id;
+ALTER TABLE ONLY public.user_points ALTER COLUMN id SET DEFAULT nextval('public.user_points_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.user_profile (
+    user_id integer NOT NULL,
+    total_sp bigint DEFAULT 0 NOT NULL,
+    rank_name text DEFAULT 'Rookie'::text NOT NULL,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.user_progress (
+    progress_id integer NOT NULL,
+    user_id integer,
+    course_id integer,
+    progress_percent integer DEFAULT 0,
+    updated_at timestamp without time zone DEFAULT now(),
+    points_awarded integer DEFAULT 0
+);
+CREATE SEQUENCE IF NOT EXISTS public.user_progress_progress_id_seq AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+ALTER SEQUENCE public.user_progress_progress_id_seq OWNED BY public.user_progress.progress_id;
+ALTER TABLE ONLY public.user_progress ALTER COLUMN progress_id SET DEFAULT nextval('public.user_progress_progress_id_seq'::regclass);
+
+CREATE TABLE IF NOT EXISTS public.user_video_progress (
+    user_id integer NOT NULL,
+    asset_id integer NOT NULL,
+    position_sec integer DEFAULT 0 NOT NULL,
+    duration_sec integer DEFAULT 0 NOT NULL,
+    completed boolean DEFAULT false NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    session_id text,
+    points_awarded integer DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS public.daily_learning_activity (
+    user_id integer NOT NULL,
+    course_id integer NOT NULL,
+    activity_date date NOT NULL,
+    seconds_watched integer DEFAULT 0 NOT NULL,
+    assets_viewed integer DEFAULT 0 NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.daily_asset_ledger (
+    user_id integer NOT NULL,
+    course_id integer NOT NULL,
+    asset_id integer NOT NULL,
+    activity_date date NOT NULL
+);
+
+-- PRIMARY KEYS & CONSTRAINTS
+
+ALTER TABLE ONLY public.activities ADD CONSTRAINT activities_pkey PRIMARY KEY (activity_id);
+ALTER TABLE ONLY public.activity_audit_log ADD CONSTRAINT activity_audit_log_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.activity_categories ADD CONSTRAINT activity_categories_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.activity_categories ADD CONSTRAINT activity_categories_key_key UNIQUE (key);
+ALTER TABLE ONLY public.activity_categories ADD CONSTRAINT activity_categories_name_key UNIQUE (name);
+ALTER TABLE ONLY public.activity_point_rules ADD CONSTRAINT activity_point_rules_pkey PRIMARY KEY (activity_type, company_id);
+ALTER TABLE ONLY public.companies ADD CONSTRAINT companies_pkey PRIMARY KEY (company_id);
+ALTER TABLE ONLY public.companies ADD CONSTRAINT companies_slug_unique UNIQUE (slug);
+ALTER TABLE ONLY public.course_assets ADD CONSTRAINT course_assets_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.course_requests ADD CONSTRAINT course_requests_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.courses ADD CONSTRAINT courses_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.daily_asset_ledger ADD CONSTRAINT daily_asset_ledger_pkey PRIMARY KEY (user_id, course_id, asset_id, activity_date);
+ALTER TABLE ONLY public.daily_learning_activity ADD CONSTRAINT daily_learning_activity_pkey PRIMARY KEY (user_id, course_id, activity_date);
+ALTER TABLE ONLY public.leaderboards ADD CONSTRAINT leaderboards_pkey PRIMARY KEY (leaderboard_id);
+ALTER TABLE ONLY public.password_resets ADD CONSTRAINT password_resets_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.rank_rules ADD CONSTRAINT rank_rules_pkey PRIMARY KEY (rank_id);
+ALTER TABLE ONLY public.rank_rules ADD CONSTRAINT rank_rules_name_company_key UNIQUE (name, company_id);
+ALTER TABLE ONLY public.tv_tokens ADD CONSTRAINT tv_tokens_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.user_courses ADD CONSTRAINT user_courses_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.user_courses ADD CONSTRAINT user_courses_user_id_course_id_key UNIQUE (user_id, course_id);
+ALTER TABLE ONLY public.user_kpis ADD CONSTRAINT user_kpis_pkey PRIMARY KEY (user_id, course_id, kpi_key);
+ALTER TABLE ONLY public.user_points ADD CONSTRAINT user_points_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.user_points ADD CONSTRAINT user_points_user_id_period_type_period_start_date_key UNIQUE (user_id, period_type, period_start_date);
+ALTER TABLE ONLY public.user_profile ADD CONSTRAINT user_profile_pkey PRIMARY KEY (user_id);
+ALTER TABLE ONLY public.user_progress ADD CONSTRAINT user_progress_pkey PRIMARY KEY (progress_id);
+ALTER TABLE ONLY public.user_progress ADD CONSTRAINT ux_user_progress UNIQUE (user_id, course_id);
+ALTER TABLE ONLY public.user_video_progress ADD CONSTRAINT user_video_progress_pkey PRIMARY KEY (user_id, asset_id);
+ALTER TABLE ONLY public.user_video_progress ADD CONSTRAINT ux_uvp_user_asset UNIQUE (user_id, asset_id);
+ALTER TABLE ONLY public.users ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+CREATE UNIQUE INDEX users_email_unique ON public.users USING btree (email);
+CREATE UNIQUE INDEX uq_leaderboards_period_user ON public.leaderboards USING btree (period, user_id);
+CREATE UNIQUE INDEX uq_user_points_bucket ON public.user_points USING btree (user_id, period_type, period_start_date);
+CREATE UNIQUE INDEX idx_course_assets_default ON public.course_assets USING btree (course_id) WHERE (is_default = true);
+CREATE INDEX idx_activities_user_date ON public.activities USING btree (user_id, date_logged);
+CREATE INDEX idx_activities_deleted ON public.activities USING btree (is_deleted);
+CREATE INDEX idx_activities_category_id ON public.activities USING btree (category_id);
+CREATE INDEX idx_courses_company_id ON public.courses USING btree (company_id);
+CREATE INDEX idx_leaderboards_period_rank ON public.leaderboards USING btree (period, rank);
+CREATE INDEX idx_user_points_period_date ON public.user_points USING btree (period_type, period_start_date);
+CREATE INDEX idx_user_points_user ON public.user_points USING btree (user_id);
+CREATE INDEX idx_users_name ON public.users USING btree (lower(name));
+
+-- FUNCTIONS
+
+CREATE OR REPLACE FUNCTION public.bump_daily_activity() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  v_course INTEGER;
+  prev_pos INT := 0;
+  new_pos  INT := 0;
+  delta    INT := 0;
+BEGIN
+  SELECT course_id INTO v_course FROM course_assets WHERE id = NEW.asset_id;
+  prev_pos := LEAST(COALESCE(OLD.position_sec,0), COALESCE(NEW.duration_sec, OLD.duration_sec, 0));
+  new_pos  := LEAST(COALESCE(NEW.position_sec,0), COALESCE(NEW.duration_sec, OLD.duration_sec, 0));
+  delta    := GREATEST(new_pos - prev_pos, 0);
+  IF delta > 0 THEN
+    INSERT INTO daily_learning_activity (user_id, course_id, activity_date, seconds_watched, assets_viewed)
+    VALUES (NEW.user_id, v_course, CURRENT_DATE, delta, 0)
+    ON CONFLICT (user_id, course_id, activity_date)
+    DO UPDATE SET seconds_watched = daily_learning_activity.seconds_watched + EXCLUDED.seconds_watched;
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO daily_learning_activity (user_id, course_id, activity_date, seconds_watched, assets_viewed)
+    VALUES (NEW.user_id, v_course, CURRENT_DATE, 0, 1)
+    ON CONFLICT (user_id, course_id, activity_date)
+    DO UPDATE SET assets_viewed = daily_learning_activity.assets_viewed + EXCLUDED.assets_viewed;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.fn_user_points_sync_from_activities() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  v_points int  := COALESCE(NEW.points, 0);
+  v_day    date := (NEW.date_logged)::date;
+BEGIN
+  INSERT INTO user_points (user_id, period_type, period_start_date, points)
+  VALUES (NEW.user_id, 'all', DATE '1970-01-01', v_points)
+  ON CONFLICT (user_id, period_type, period_start_date)
+  DO UPDATE SET points = user_points.points + EXCLUDED.points;
+  INSERT INTO user_points (user_id, period_type, period_start_date, points)
+  VALUES (NEW.user_id, 'daily', v_day, v_points)
+  ON CONFLICT (user_id, period_type, period_start_date)
+  DO UPDATE SET points = user_points.points + EXCLUDED.points;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.mk_period_key(p_period text, p_refdate date DEFAULT CURRENT_DATE) RETURNS text LANGUAGE sql AS $$
+SELECT CASE
+  WHEN lower(p_period) = 'daily'   THEN 'daily:'   || to_char(p_refdate, 'YYYY-MM-DD')
+  WHEN lower(p_period) = 'weekly'  THEN 'weekly:'  || to_char(date_trunc('week', p_refdate), 'IYYY-"W"IW')
+  WHEN lower(p_period) = 'monthly' THEN 'monthly:' || to_char(date_trunc('month', p_refdate), 'YYYY-MM')
+  WHEN lower(p_period) = 'all'     THEN 'all'
+  ELSE NULL
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.recompute_kpis_for_user_course(p_user integer, p_course integer) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  v_total_dur  NUMERIC := 0;
+  v_watched    NUMERIC := 0;
+  v_completion NUMERIC := 0;
+  v_minutes_7d NUMERIC := 0;
+  v_streak     INT := 0;
+  d DATE := CURRENT_DATE;
+BEGIN
+  SELECT COALESCE(SUM(u.duration_sec),0)::NUMERIC, COALESCE(SUM(LEAST(u.position_sec, u.duration_sec)),0)::NUMERIC
+  INTO v_total_dur, v_watched
+  FROM user_video_progress u JOIN course_assets a ON a.id = u.asset_id
+  WHERE a.course_id = p_course AND a.kind = 'video' AND u.user_id = p_user;
+  IF v_total_dur > 0 THEN v_completion := ROUND((v_watched / v_total_dur) * 100.0, 2);
+  ELSE v_completion := 0; END IF;
+  SELECT COALESCE(SUM(seconds_watched),0) / 60.0 INTO v_minutes_7d
+  FROM daily_learning_activity WHERE user_id = p_user AND course_id = p_course AND activity_date >= CURRENT_DATE - INTERVAL '6 days';
+  v_streak := 0;
+  WHILE d >= CURRENT_DATE - INTERVAL '365 days' LOOP
+    EXIT WHEN NOT EXISTS (SELECT 1 FROM daily_learning_activity WHERE user_id = p_user AND course_id = p_course AND activity_date = d AND seconds_watched > 0);
+    v_streak := v_streak + 1;
+    d := d - INTERVAL '1 day';
+  END LOOP;
+  INSERT INTO user_kpis (user_id, course_id, kpi_key, value_numeric, updated_at) VALUES
+    (p_user, p_course, 'video_completion_pct',  v_completion,           NOW()),
+    (p_user, p_course, 'engagement_minutes_7d', ROUND(v_minutes_7d,2),  NOW()),
+    (p_user, p_course, 'streak_days',           v_streak,               NOW())
+  ON CONFLICT (user_id, course_id, kpi_key)
+  DO UPDATE SET value_numeric = EXCLUDED.value_numeric, updated_at = EXCLUDED.updated_at;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.uvp_after_change_recompute() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_course INTEGER;
+BEGIN
+  SELECT course_id INTO v_course FROM course_assets WHERE id = NEW.asset_id;
+  PERFORM recompute_kpis_for_user_course(NEW.user_id, v_course);
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.seed_company_defaults(p_company_id integer) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO rank_rules (name, min_sp, badge_color, sort_order, company_id) VALUES
+    ('Rookie',0,'gray',1,p_company_id),('Scout',250,'cyan',2,p_company_id),
+    ('Closer',1000,'blue',3,p_company_id),('Captain',2500,'purple',4,p_company_id),
+    ('Major',6000,'amber',5,p_company_id),('General',12000,'red',6,p_company_id)
+  ON CONFLICT DO NOTHING;
+  INSERT INTO activity_point_rules (activity_type, points_per_unit, is_active, sort_order, company_id) VALUES
+    ('Calls',2,TRUE,1,p_company_id),('Emails',1,TRUE,2,p_company_id),
+    ('Text Messages',1,TRUE,3,p_company_id),('Appointments',10,TRUE,4,p_company_id),
+    ('Presentations',15,TRUE,5,p_company_id),('Deals',50,TRUE,6,p_company_id),
+    ('Social Media Posts',3,TRUE,7,p_company_id),('Networking Events',20,TRUE,8,p_company_id),
+    ('Doors Knocked',3,TRUE,9,p_company_id),('Referrals Received',25,TRUE,10,p_company_id)
+  ON CONFLICT DO NOTHING;
+END;
+$$;
+
+-- TRIGGERS
+
+
+-- FOREIGN KEYS
+
+ALTER TABLE ONLY public.users ADD CONSTRAINT users_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(company_id) ON DELETE SET NULL;
+ALTER TABLE ONLY public.activities ADD CONSTRAINT activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.activities ADD CONSTRAINT activities_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.activity_categories(id);
+ALTER TABLE ONLY public.activity_point_rules ADD CONSTRAINT activity_point_rules_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(company_id);
+ALTER TABLE ONLY public.courses ADD CONSTRAINT courses_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(company_id);
+ALTER TABLE ONLY public.course_assets ADD CONSTRAINT course_assets_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.course_requests ADD CONSTRAINT course_requests_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.course_requests ADD CONSTRAINT course_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.leaderboards ADD CONSTRAINT leaderboards_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(company_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.leaderboards ADD CONSTRAINT leaderboards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.password_resets ADD CONSTRAINT password_resets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.rank_rules ADD CONSTRAINT rank_rules_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(company_id);
+ALTER TABLE ONLY public.tv_tokens ADD CONSTRAINT tv_tokens_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(company_id);
+ALTER TABLE ONLY public.user_courses ADD CONSTRAINT user_courses_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_courses ADD CONSTRAINT user_courses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_kpis ADD CONSTRAINT user_kpis_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_kpis ADD CONSTRAINT user_kpis_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+ALTER TABLE ONLY public.user_points ADD CONSTRAINT user_points_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_profile ADD CONSTRAINT user_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_progress ADD CONSTRAINT user_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_progress ADD CONSTRAINT user_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_video_progress ADD CONSTRAINT user_video_progress_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES public.course_assets(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_video_progress ADD CONSTRAINT user_video_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.daily_learning_activity ADD CONSTRAINT daily_learning_activity_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.daily_learning_activity ADD CONSTRAINT daily_learning_activity_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+ALTER TABLE ONLY public.daily_asset_ledger ADD CONSTRAINT daily_asset_ledger_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+
+-- DATA
+
+INSERT INTO public.companies (company_id, name, created_at, slug, logo_url, tagline, theme) VALUES
+(1, 'Finance', '2026-02-25 23:25:35.534445', 'finance', NULL, NULL, '{"bgColor": "#0a0f1e", "textColor": "#f1f5f9", "accentColor": "#00c1de", "primaryColor": "#4c51bf"}'),
+(2, 'Computing', '2026-02-28 23:01:15.936399', 'computing', NULL, NULL, '{}'),
+(3, 'Design and Draw', '2026-03-19 22:30:01.959308', 'design-and-draw', NULL, NULL, '{}');
+
+SELECT pg_catalog.setval('public.companies_company_id_seq', 3, true);
+
+INSERT INTO public.users (user_id, company_id, email, role, password_hash, created_at, name) VALUES
+(1, 1, 'admin@gmail.com', 'admin', '$2b$10$3aiao5iEvp.8lxDX77naIOJ.cqkA.F.slaEC/uNY9upJQILR.vmm6', '2026-02-25 23:25:47.364128', 'Admin'),
+(2, 1, 'alex@gmail.com', 'sales_rep', '$2b$10$BoND9CEn2zL762lOkYHZAufWe6HZDFcJkKlFAMVPiB0IQKSv0YhdG', '2026-02-28 22:35:06.823693', 'Alex'),
+(3, 2, 'admin2@gmail.com', 'admin', '$2b$10$hSAWq/gUJtj9MmUUniAm7OoEA3bPZyTTIKB.S.2R..qR/EAFYx6Ue', '2026-02-28 23:01:40.327461', 'Admin2'),
+(4, 2, 'alice@gmail.com', 'sales_rep', '$2b$10$0aXXyIA9RSInifenWKYHfu47w.kT2E2qBkwxsR6URWckNdfuC7IiG', '2026-02-28 23:29:06.358433', 'Alice');
+
+SELECT pg_catalog.setval('public.users_user_id_seq', 4, true);
+
+INSERT INTO public.activity_categories (id, name, key, created_at) VALUES
+(1, 'Combat Ops', 'combat_ops', '2026-02-03 20:45:10.827756'),
+(2, 'R&D / Intel', 'rd_intel', '2026-02-03 20:45:10.827756'),
+(3, 'Training', 'training', '2026-02-03 20:45:10.827756');
+
+SELECT pg_catalog.setval('public.activity_categories_id_seq', 3, true);
+
+INSERT INTO public.courses (id, title, category, points, is_active, storage_provider, media_type, description, hidden, company_id) VALUES
+(3, 'Introduction to C++', 'Computer', 50, true, 's3', 'video', '', false, 2),
+(4, 'Introduction to Sales', 'Sales', 50, true, 's3', 'video', '', false, 1),
+(5, 'Introduction to Accounting', 'Accounts', 50, true, 's3', 'video', '', false, 1),
+(6, 'Financial Accounting', 'Finance', 50, true, 's3', 'video', '', false, 1),
+(7, 'Web Development', 'Website', 50, true, 's3', 'video', '', false, 2),
+(8, 'Introduction to java', 'Computer', 50, true, 's3', 'video', '', false, 2);
+
+SELECT pg_catalog.setval('public.courses_id_seq', 8, true);
+
+INSERT INTO public.course_assets (id, course_id, kind, s3_key, mime_type, size_bytes, duration_seconds, is_default, created_at, file_name, public_url) VALUES
+(3, 3, 'video', 'courses/computing/3/1a6dccae-e13f-4036-a53f-d6dfdc199e3a.mp4', 'video/mp4', 6647776, 24, true, '2026-02-28 23:22:38.532026', 'WhatsApp Video 2025-10-07 at 05.15.52_fe0252be.mp4', NULL),
+(4, 4, 'video', 'courses/finance/4/e4a0923c-8c07-4ddc-bc52-f1e6bfcdb404.mp4', 'video/mp4', 6647776, 24, true, '2026-02-28 23:27:04.549932', 'WhatsApp Video 2025-10-07 at 05.15.52_fe0252be.mp4', NULL),
+(5, 5, 'video', 'courses/finance/5/629c6c6f-23be-45ad-b410-cfc5f9d17e9c.mp4', 'video/mp4', 3877449, 20, true, '2026-03-05 22:05:58.240521', 'WhatsApp Video 2025-10-03 at 17.49.35_5e8d0c79.mp4', NULL),
+(6, 5, 'video', 'courses/finance/5/15b820e2-7f61-49be-8296-4dabab6c3241.mp4', 'video/mp4', 1134143, 5, false, '2026-03-05 22:06:26.899823', 'WhatsApp Video 2025-10-03 at 17.49.24_25161fd7.mp4', 'https://saleseratorvf.s3.us-east-2.amazonaws.com/courses/finance/5/15b820e2-7f61-49be-8296-4dabab6c3241.mp4'),
+(7, 4, 'video', 'courses/finance/4/88a5b2b1-e04c-4221-80b4-0746909bd133.mp4', 'video/mp4', 2041901, 10, false, '2026-03-05 22:17:52.547451', 'WhatsApp Video 2025-10-03 at 17.49.20_3cbe3c49.mp4', 'https://saleseratorvf.s3.us-east-2.amazonaws.com/courses/finance/4/88a5b2b1-e04c-4221-80b4-0746909bd133.mp4'),
+(8, 6, 'video', 'courses/finance/6/9ffab763-48d9-41dd-a522-604f3fbed50d.mp4', 'video/mp4', 3877449, 20, true, '2026-03-05 22:19:39.472842', 'WhatsApp Video 2025-10-03 at 17.49.35_5e8d0c79.mp4', NULL),
+(9, 7, 'video', 'courses/computing/7/0b3e7cce-5f80-46f3-bdd1-897b86acc398.mp4', 'video/mp4', 6647776, 24, true, '2026-03-05 22:24:32.540786', 'WhatsApp Video 2025-10-07 at 05.15.52_fe0252be.mp4', NULL),
+(10, 7, 'video', 'courses/computing/7/a577e99f-d11f-48c2-9a3a-3780aba228e6.mp4', 'video/mp4', 1134143, 5, false, '2026-03-05 22:24:58.123025', 'WhatsApp Video 2025-10-03 at 17.49.24_25161fd7.mp4', 'https://saleseratorvf.s3.us-east-2.amazonaws.com/courses/computing/7/a577e99f-d11f-48c2-9a3a-3780aba228e6.mp4'),
+(11, 6, 'video', 'courses/finance/6/dc2cf87d-22db-4925-808f-c1e761023502.mp4', 'video/mp4', 2041901, 10, false, '2026-03-11 21:56:59.135687', 'WhatsApp Video 2025-10-03 at 17.49.20_3cbe3c49.mp4', 'https://saleseratorvf.s3.us-east-2.amazonaws.com/courses/finance/6/dc2cf87d-22db-4925-808f-c1e761023502.mp4'),
+(12, 8, 'video', 'courses/computing/8/a7ad7029-2663-44a0-aa30-b56d02f5ee21.mp4', 'video/mp4', 6647776, 24, true, '2026-03-11 21:58:32.451992', 'WhatsApp Video 2025-10-07 at 05.15.52_fe0252be.mp4', NULL),
+(13, 8, 'video', 'courses/computing/8/34d3b4ce-3fa8-409a-a919-3fd0ad8d1220.mp4', 'video/mp4', 1134143, 5, false, '2026-03-11 21:58:33.353746', 'WhatsApp Video 2025-10-03 at 17.49.24_25161fd7.mp4', NULL),
+(14, 6, 'video', 'courses/finance/6/ca88da1d-5a84-4d48-931b-3d519848042b.mp4', 'video/mp4', 3877449, 20, false, '2026-03-11 22:01:59.053015', 'WhatsApp Video 2025-10-03 at 17.49.35_5e8d0c79.mp4', 'https://saleseratorvf.s3.us-east-2.amazonaws.com/courses/finance/6/ca88da1d-5a84-4d48-931b-3d519848042b.mp4');
+
+SELECT pg_catalog.setval('public.course_assets_id_seq', 14, true);
+
+INSERT INTO public.course_requests (id, user_id, course_id, status, requested_at) VALUES
+(1, 2, 4, 'approved', '2026-03-02 23:18:21.860506'),
+(2, 4, 3, 'approved', '2026-03-04 23:14:10.11347'),
+(3, 2, 5, 'approved', '2026-03-05 22:06:45.478658'),
+(4, 2, 6, 'approved', '2026-03-05 22:19:58.535976'),
+(5, 4, 7, 'approved', '2026-03-05 22:25:18.224687');
+
+SELECT pg_catalog.setval('public.course_requests_id_seq', 5, true);
+
+INSERT INTO public.rank_rules (rank_id, name, min_sp, badge_color, sort_order, company_id) VALUES
+(7, 'Rookie', 0, 'gray', 1, 1),(8, 'Scout', 250, 'cyan', 2, 1),(9, 'Closer', 600, 'blue', 3, 1),
+(10, 'Captain', 2500, 'purple', 4, 1),(11, 'Major', 6000, 'amber', 5, 1),(12, 'General', 12000, 'red', 6, 1),
+(31, 'Rookie', 0, 'gray', 1, 2),(32, 'Scout', 250, 'cyan', 2, 2),(33, 'Closer', 500, 'blue', 3, 2),
+(34, 'Captain', 2500, 'purple', 4, 2),(35, 'Major', 6000, 'amber', 5, 2),(36, 'General', 12000, 'red', 6, 2),
+(37, 'Rookie', 0, 'gray', 1, 3),(38, 'Scout', 250, 'cyan', 2, 3),(39, 'Closer', 1000, 'blue', 3, 3),
+(40, 'Captain', 2500, 'purple', 4, 3),(41, 'Major', 6000, 'amber', 5, 3),(42, 'General', 12000, 'red', 6, 3);
+
+SELECT pg_catalog.setval('public.rank_rules_rank_id_seq', 42, true);
+
+INSERT INTO public.activity_point_rules (activity_type, points_per_unit, is_active, daily_cap, sort_order, updated_at, company_id) VALUES
+('Calls', 2, true, NULL, 1, '2026-03-06 23:17:16.369176+05', 1),
+('Presentations', 15, true, NULL, 5, '2026-03-06 23:17:16.369176+05', 1),
+('Deals', 50, true, NULL, 6, '2026-03-06 23:17:16.369176+05', 1),
+('Social Media Posts', 3, true, NULL, 7, '2026-03-06 23:17:16.369176+05', 1),
+('Networking Events', 20, true, NULL, 8, '2026-03-06 23:17:16.369176+05', 1),
+('Doors Knocked', 3, true, NULL, 9, '2026-03-11 22:31:41.76192+05', 1),
+('Referrals Received', 25, true, NULL, 10, '2026-03-06 23:17:16.369176+05', 1),
+('Appointments', 15, true, NULL, 4, '2026-03-11 22:31:41.76192+05', 1),
+('Emails', 2, true, NULL, 2, '2026-03-11 22:31:44.065714+05', 1),
+('Text Messages', 2, true, NULL, 3, '2026-03-11 22:31:45.166672+05', 1),
+('Calls', 2, true, NULL, 1, '2026-03-06 23:17:16.897367+05', 2),
+('Emails', 1, true, NULL, 2, '2026-03-06 23:17:16.897367+05', 2),
+('Text Messages', 1, true, NULL, 3, '2026-03-06 23:17:16.897367+05', 2),
+('Appointments', 10, true, NULL, 4, '2026-03-06 23:17:16.897367+05', 2),
+('Presentations', 15, true, NULL, 5, '2026-03-06 23:17:16.897367+05', 2),
+('Deals', 50, true, NULL, 6, '2026-03-06 23:17:16.897367+05', 2),
+('Social Media Posts', 3, true, NULL, 7, '2026-03-06 23:17:16.897367+05', 2),
+('Networking Events', 20, true, NULL, 8, '2026-03-06 23:17:16.897367+05', 2),
+('Doors Knocked', 5, true, NULL, 9, '2026-03-11 21:00:57.444633+05', 2),
+('Referrals Received', 25, true, NULL, 10, '2026-03-06 23:17:16.897367+05', 2),
+('Calls', 2, true, NULL, 1, '2026-03-19 22:30:01.975933+05', 3),
+('Emails', 1, true, NULL, 2, '2026-03-19 22:30:01.975933+05', 3),
+('Text Messages', 1, true, NULL, 3, '2026-03-19 22:30:01.975933+05', 3),
+('Appointments', 10, true, NULL, 4, '2026-03-19 22:30:01.975933+05', 3),
+('Presentations', 15, true, NULL, 5, '2026-03-19 22:30:01.975933+05', 3),
+('Deals', 50, true, NULL, 6, '2026-03-19 22:30:01.975933+05', 3),
+('Social Media Posts', 3, true, NULL, 7, '2026-03-19 22:30:01.975933+05', 3),
+('Networking Events', 20, true, NULL, 8, '2026-03-19 22:30:01.975933+05', 3),
+('Doors Knocked', 3, true, NULL, 9, '2026-03-19 22:30:01.975933+05', 3),
+('Referrals Received', 25, true, NULL, 10, '2026-03-19 22:30:01.975933+05', 3);
+
+INSERT INTO public.user_courses (id, user_id, course_id, status, created_at) VALUES
+(1, 2, 4, 'enrolled', '2026-03-02 23:18:34.896224'),
+(2, 4, 3, 'enrolled', '2026-03-04 23:14:33.388159'),
+(3, 2, 5, 'enrolled', '2026-03-05 22:06:59.120933'),
+(4, 2, 6, 'enrolled', '2026-03-05 22:21:30.740447'),
+(5, 4, 7, 'enrolled', '2026-03-05 22:25:44.072685');
+
+SELECT pg_catalog.setval('public.user_courses_id_seq', 5, true);
+
+INSERT INTO public.user_video_progress (user_id, asset_id, position_sec, duration_sec, completed, updated_at, session_id, points_awarded) VALUES
+(2, 4, 24, 24, true, '2026-03-03 22:25:18.412973+05', '043d39f6-e8de-4329-bbcd-2cc87202e11d', 0),
+(4, 3, 24, 24, true, '2026-03-04 23:16:03.852019+05', '9567a9b8-1c15-4e95-a289-3317cde10b10', 0),
+(2, 6, 5, 5, true, '2026-03-05 22:07:52.197833+05', 'b49b1591-cd54-499e-867a-367f0823a0b8', 0),
+(2, 5, 20, 20, true, '2026-03-05 22:08:42.918845+05', 'f158c61b-6ee1-454e-abc3-f3953aa58f9b', 0),
+(2, 7, 10, 10, true, '2026-03-05 22:18:38.01719+05', 'b5f537c8-65cb-4d7f-80d4-4d6d330358c1', 0),
+(2, 8, 20, 20, true, '2026-03-05 22:22:10.986417+05', '927b2683-d01c-40ef-997d-7a8a4c5e7cd9', 0),
+(4, 10, 5, 5, true, '2026-03-05 22:27:01.028187+05', 'e83878a2-3e92-478c-8bc0-350882a27948', 0),
+(4, 9, 24, 24, true, '2026-03-05 22:27:20.401771+05', '61d35c65-6d4c-459f-b6c6-f32a416f4832', 0),
+(2, 11, 10, 10, true, '2026-03-11 22:02:37.429498+05', '9036fc56-c2d2-4c35-8c7f-30cb54521c2a', 0),
+(2, 14, 20, 20, true, '2026-03-11 22:13:08.761414+05', '7603294b-a222-4cfa-a4f1-29beea3cf6cc', 0);
+
+INSERT INTO public.daily_learning_activity (user_id, course_id, activity_date, seconds_watched, assets_viewed) VALUES
+(2, 4, '2026-03-03', 48, 2),
+(4, 3, '2026-03-04', 48, 2),
+(2, 5, '2026-03-05', 50, 4),
+(2, 6, '2026-03-05', 40, 2),
+(4, 7, '2026-03-05', 68, 4),
+(2, 4, '2026-03-05', 20, 2),
+(2, 6, '2026-03-11', 60, 4);
+
+INSERT INTO public.daily_asset_ledger (user_id, course_id, asset_id, activity_date) VALUES
+(2, 4, 4, '2026-03-03'),(4, 3, 3, '2026-03-04'),(2, 5, 6, '2026-03-05'),
+(2, 5, 5, '2026-03-05'),(2, 4, 7, '2026-03-05'),(2, 6, 8, '2026-03-05'),
+(4, 7, 10, '2026-03-05'),(4, 7, 9, '2026-03-05'),(2, 6, 11, '2026-03-11'),
+(2, 6, 14, '2026-03-11');
+
+INSERT INTO public.user_progress (progress_id, user_id, course_id, progress_percent, updated_at, points_awarded) VALUES
+(1, 2, 4, 100, '2026-03-05 22:18:38.01719', 0),
+(8, 4, 3, 100, '2026-03-04 23:16:03.852019', 0),
+(15, 2, 5, 100, '2026-03-05 22:08:42.918845', 0),
+(26, 2, 6, 100, '2026-03-11 22:13:08.761414', 0),
+(32, 4, 7, 100, '2026-03-05 22:27:20.401771', 0);
+
+SELECT pg_catalog.setval('public.user_progress_progress_id_seq', 45, true);
+
+INSERT INTO public.user_kpis (user_id, course_id, kpi_key, value_numeric, updated_at) VALUES
+(2, 4, 'video_completion_pct', 100.00, '2026-03-05 22:18:38.01719+05'),
+(2, 4, 'engagement_minutes_7d', 1.07, '2026-03-05 22:18:38.01719+05'),
+(2, 4, 'streak_days', 1, '2026-03-05 22:18:38.01719+05'),
+(4, 3, 'video_completion_pct', 100.00, '2026-03-04 23:16:03.852019+05'),
+(4, 3, 'engagement_minutes_7d', 0.72, '2026-03-04 23:16:03.852019+05'),
+(4, 3, 'streak_days', 1, '2026-03-04 23:16:03.852019+05'),
+(4, 7, 'video_completion_pct', 100.00, '2026-03-05 22:27:20.401771+05'),
+(4, 7, 'engagement_minutes_7d', 1.08, '2026-03-05 22:27:20.401771+05'),
+(4, 7, 'streak_days', 1, '2026-03-05 22:27:20.401771+05'),
+(2, 5, 'video_completion_pct', 100.00, '2026-03-05 22:08:42.918845+05'),
+(2, 5, 'engagement_minutes_7d', 0.80, '2026-03-05 22:08:42.918845+05'),
+(2, 5, 'streak_days', 1, '2026-03-05 22:08:42.918845+05'),
+(2, 6, 'video_completion_pct', 100.00, '2026-03-11 22:13:08.761414+05'),
+(2, 6, 'engagement_minutes_7d', 1.65, '2026-03-11 22:13:08.761414+05'),
+(2, 6, 'streak_days', 1, '2026-03-11 22:13:08.761414+05');
+
+INSERT INTO public.user_points (id, user_id, period_type, points, period_start_date) VALUES
+(1, 2, 'all', 335, '1970-01-01'),(2, 2, 'daily', 55, '2026-03-03'),
+(5, 4, 'all', 317, '1970-01-01'),(6, 4, 'daily', 55, '2026-03-04'),
+(10, 2, 'daily', 122, '2026-03-05'),(24, 4, 'daily', 60, '2026-03-05'),
+(30, 4, 'daily', 135, '2026-03-06'),(46, 4, 'daily', 5, '2026-03-11'),
+(48, 2, 'daily', 100, '2026-03-11'),(64, 2, 'daily', 55, '2026-03-17'),
+(70, 4, 'daily', 50, '2026-03-17'),(72, 4, 'daily', 12, '2026-03-18'),
+(76, 2, 'daily', 3, '2026-03-18');
+
+SELECT pg_catalog.setval('public.user_points_id_seq', 76, true);
+
+INSERT INTO public.user_profile (user_id, total_sp, rank_name, updated_at) VALUES
+(4, 317, 'Scout', '2026-03-18 21:01:29.807344'),
+(2, 335, 'Scout', '2026-03-18 21:01:51.272829');
+
+INSERT INTO public.leaderboards (leaderboard_id, company_id, user_id, period, total_points, rank) VALUES
+(1, NULL, 2, 'daily:2026-03-03', 55, 1),(2, NULL, 2, 'weekly:2026-W10', 177, 2),
+(3, NULL, 2, 'all', 335, 1),(4, NULL, 2, 'monthly:2026-03', 335, 1),
+(62, NULL, 4, 'daily:2026-03-04', 55, 1),(64, NULL, 4, 'weekly:2026-W10', 250, 1),
+(66, NULL, 4, 'monthly:2026-03', 317, 2),(68, NULL, 4, 'all', 317, 2),
+(139, NULL, 2, 'daily:2026-03-05', 122, 1),(301, NULL, 4, 'daily:2026-03-05', 60, 2),
+(352, NULL, 4, 'daily:2026-03-06', 135, 1),(421, NULL, 4, 'weekly:2026-W11', 5, 2),
+(423, NULL, 4, 'daily:2026-03-11', 5, 2),(439, NULL, 2, 'daily:2026-03-11', 100, 1),
+(443, NULL, 2, 'weekly:2026-W11', 100, 1),(618, NULL, 2, 'weekly:2026-W12', 58, 2),
+(619, NULL, 2, 'daily:2026-03-17', 55, 1),(639, NULL, 4, 'weekly:2026-W12', 62, 1),
+(641, NULL, 4, 'daily:2026-03-17', 50, 2),(654, NULL, 4, 'daily:2026-03-18', 12, 1),
+(673, NULL, 2, 'daily:2026-03-18', 3, 2);
+
+SELECT pg_catalog.setval('public.leaderboards_leaderboard_id_seq', 833, true);
+
+INSERT INTO public.activities (activity_id, user_id, activity_type, value, date_logged, points, edited_by_admin_id, edit_reason, is_deleted, updated_at, category_id) VALUES
+(1, 2, 'video_completed', 4, '2026-03-03 22:25:17.659803', 5, NULL, NULL, false, '2026-03-03 22:25:17.659803+05', 3),
+(2, 2, 'course_completed', 4, '2026-03-03 22:25:18.412973', 50, NULL, NULL, false, '2026-03-03 22:25:18.412973+05', 3),
+(3, 4, 'video_completed', 3, '2026-03-04 23:16:03.852019', 5, NULL, NULL, false, '2026-03-04 23:16:03.852019+05', 3),
+(4, 4, 'course_completed', 3, '2026-03-04 23:16:03.852019', 50, NULL, NULL, false, '2026-03-04 23:16:03.852019+05', 3),
+(5, 2, 'video_completed', 6, '2026-03-05 22:07:51.735425', 5, NULL, NULL, false, '2026-03-05 22:07:51.735425+05', 3),
+(6, 2, 'video_completed', 5, '2026-03-05 22:08:42.918845', 5, NULL, NULL, false, '2026-03-05 22:08:42.918845+05', 3),
+(7, 2, 'course_completed', 5, '2026-03-05 22:08:42.918845', 50, NULL, NULL, false, '2026-03-05 22:08:42.918845+05', 3),
+(8, 2, 'Calls', 1, '2026-03-05 00:00:00', 2, NULL, NULL, false, '2026-03-05 22:09:11.310288+05', 1),
+(9, 2, 'video_completed', 7, '2026-03-05 22:18:38.01719', 5, NULL, NULL, false, '2026-03-05 22:18:38.01719+05', 3),
+(10, 2, 'video_completed', 8, '2026-03-05 22:22:10.547462', 5, NULL, NULL, false, '2026-03-05 22:22:10.547462+05', 3),
+(11, 2, 'course_completed', 6, '2026-03-05 22:22:10.986417', 50, NULL, NULL, false, '2026-03-05 22:22:10.986417+05', 3),
+(12, 4, 'video_completed', 10, '2026-03-05 22:27:00.944455', 5, NULL, NULL, false, '2026-03-05 22:27:00.944455+05', 3),
+(13, 4, 'video_completed', 9, '2026-03-05 22:27:20.401771', 5, NULL, NULL, false, '2026-03-05 22:27:20.401771+05', 3),
+(14, 4, 'course_completed', 7, '2026-03-05 22:27:20.401771', 50, NULL, NULL, false, '2026-03-05 22:27:20.401771+05', 3),
+(15, 4, 'Deals', 1, '2026-03-06 00:00:00', 50, NULL, NULL, false, '2026-03-06 23:56:37.822303+05', NULL),
+(16, 4, 'Doors Knocked', 1, '2026-03-06 00:00:00', 3, NULL, NULL, false, '2026-03-06 23:56:55.314887+05', 1),
+(17, 4, 'Calls', 1, '2026-03-06 00:00:00', 2, NULL, NULL, false, '2026-03-06 23:56:57.745106+05', 1),
+(18, 4, 'Presentations', 1, '2026-03-06 00:00:00', 15, NULL, NULL, false, '2026-03-06 23:57:00.482443+05', 1),
+(19, 4, 'Presentations', 1, '2026-03-06 00:00:00', 15, NULL, NULL, false, '2026-03-06 23:57:02.24044+05', 1),
+(20, 4, 'Presentations', 1, '2026-03-06 00:00:00', 15, NULL, NULL, false, '2026-03-06 23:57:04.052299+05', 1),
+(21, 4, 'Presentations', 1, '2026-03-06 00:00:00', 15, NULL, NULL, false, '2026-03-06 23:57:06.367028+05', 1),
+(22, 4, 'Networking Events', 1, '2026-03-06 00:00:00', 20, NULL, NULL, false, '2026-03-06 23:57:22.739966+05', 2),
+(23, 4, 'Doors Knocked', 1, '2026-03-11 00:00:00', 5, NULL, NULL, false, '2026-03-11 21:01:16.650101+05', 1),
+(24, 2, 'Doors Knocked', 1, '2026-03-11 00:00:00', 3, NULL, NULL, false, '2026-03-11 21:17:07.399932+05', 1),
+(25, 2, 'Deals', 1, '2026-03-11 00:00:00', 50, NULL, NULL, false, '2026-03-11 21:17:15.139725+05', NULL),
+(26, 2, 'Appointments', 1, '2026-03-11 00:00:00', 10, NULL, NULL, false, '2026-03-11 21:17:18.35528+05', 1),
+(27, 2, 'Appointments', 1, '2026-03-11 00:00:00', 10, NULL, NULL, false, '2026-03-11 21:17:33.883708+05', 1),
+(28, 2, 'video_completed', 11, '2026-03-11 22:02:37.041961', 5, NULL, NULL, false, '2026-03-11 22:02:37.041961+05', 3),
+(29, 2, 'video_completed', 14, '2026-03-11 22:13:07.472557', 5, NULL, NULL, false, '2026-03-11 22:13:07.472557+05', 3),
+(30, 2, 'Emails', 1, '2026-03-11 00:00:00', 2, NULL, NULL, false, '2026-03-11 22:32:11.895561+05', 1),
+(31, 2, 'Presentations', 1, '2026-03-11 00:00:00', 15, NULL, NULL, false, '2026-03-11 22:32:25.714579+05', 1),
+(32, 2, 'Deals', 1, '2026-03-17 00:00:00', 50, NULL, NULL, false, '2026-03-18 00:51:48.303653+05', NULL),
+(33, 2, 'Calls', 1, '2026-03-17 00:00:00', 2, NULL, NULL, false, '2026-03-18 00:51:51.450424+05', 1),
+(34, 2, 'Doors Knocked', 1, '2026-03-17 00:00:00', 3, NULL, NULL, false, '2026-03-18 00:52:03.814732+05', 1),
+(35, 4, 'Deals', 1, '2026-03-17 00:00:00', 50, NULL, NULL, false, '2026-03-18 00:52:28.024655+05', NULL),
+(36, 4, 'Calls', 1, '2026-03-18 00:00:00', 2, NULL, NULL, false, '2026-03-18 20:53:32.733543+05', 1),
+(37, 4, 'Appointments', 1, '2026-03-18 00:00:00', 10, NULL, NULL, false, '2026-03-18 21:01:29.513002+05', 1),
+(38, 2, 'Doors Knocked', 1, '2026-03-18 00:00:00', 3, NULL, NULL, false, '2026-03-18 21:01:50.986195+05', 1);
+
+SELECT pg_catalog.setval('public.activities_activity_id_seq', 38, true);
+SELECT pg_catalog.setval('public.activity_audit_log_id_seq', 1, false);
+
+
+-- ============================================================
+-- RUN THESE MANUALLY AFTER THIS SCRIPT SUCCEEDS:
+-- ============================================================
+CREATE TRIGGER trg_user_points_sync_from_activities AFTER INSERT ON public.activities FOR EACH ROW EXECUTE FUNCTION public.fn_user_points_sync_from_activities();
+CREATE TRIGGER trg_uvp_bump AFTER INSERT OR UPDATE OF position_sec ON public.user_video_progress FOR EACH ROW EXECUTE FUNCTION public.bump_daily_activity();
+CREATE TRIGGER trg_uvp_kpi AFTER INSERT OR UPDATE OF position_sec ON public.user_video_progress FOR EACH ROW EXECUTE FUNCTION public.uvp_after_change_recompute();
