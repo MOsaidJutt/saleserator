@@ -1,82 +1,125 @@
-Saleserator - Full Platform Setup & User Guide
-This document provides a comprehensive guide to setting up the Saleserator platform and understanding its core functionalities.
+# Saleserator Academy — Setup Guide
 
-1. Prerequisites
-Ensure the following are installed:
+## Prerequisites
 
-Node.js (LTS Version)
-npm (provided with node)
-PostgreSQL
+- Node.js v18 or higher
+- npm
+- A Supabase account (PostgreSQL)
+- An AWS S3 bucket
 
-2. Database Setup (PostgreSQL)
-Create Database: Create a new database in PostgreSQL named saleserator.
+---
 
-Import Data: Locate the provided saleserator.sql backup file.
+## Project Structure
 
-Execution: Import this file using pgAdmin or the SQL command line to restore the schema and initial data.
+```
+saleserator/
+├── frontend/
+└── backend/
+```
 
-3. Project Structure & Setup
-To ensure all relative paths and scripts work correctly, please maintain the following structure:
+---
 
-Root Folder: Create a folder named saleserator.
+## 1. Database Setup
 
-Folders: Place the extracted frontend and backend folders inside it.
+**Running locally (pgAdmin):**
 
-Environment Files (.env): 
-  Copy the provided Frontend .env into the /frontend folder.
-  Copy the provided Backend .env into the /backend folder.
+1. Open pgAdmin and create a new database named `saleserator`
+2. Right-click the database → **Restore** or use the Query Tool
+3. Import the `saleserator.sql` file included in the repository
 
-Note: These files are essential for database and API connectivity.
+**Migrating to a cloud service (Supabase, Railway Postgres, etc.):**
 
-4. Installation & Running
-Step 1: Install Dependencies
-Navigate to each folder in your terminal and run:
+1. Create a new project on your chosen platform (e.g. [supabase.com](https://supabase.com))
+2. Open the SQL Editor
+3. Open `simple database.txt` from the repository — this file is migration-ready and will run directly in any SQL editor
+4. Paste and run the full script — it will create all tables, functions, and seed default data
+5. Once complete, run the three trigger statements at the bottom of the file separately:
 
-Frontend: npm install
-Backend:  npm install
+```sql
+CREATE TRIGGER trg_user_points_sync_from_activities
+AFTER INSERT ON public.activities
+FOR EACH ROW EXECUTE FUNCTION public.fn_user_points_sync_from_activities();
 
-Step 2: Start the Platform
-Start Backend: In the /backend folder, run node app.js. (Starts on http://localhost:5000)
+CREATE TRIGGER trg_uvp_bump
+AFTER INSERT OR UPDATE OF position_sec ON public.user_video_progress
+FOR EACH ROW EXECUTE FUNCTION public.bump_daily_activity();
 
-Start Frontend: In the /frontend folder, run npm start. (Starts on http://localhost:3000)
+CREATE TRIGGER trg_uvp_kpi
+AFTER INSERT OR UPDATE OF position_sec ON public.user_video_progress
+FOR EACH ROW EXECUTE FUNCTION public.uvp_after_change_recompute();
+```
 
-5. Admin Panel Access
-Credentials:  Email: admin@gmail.com | Password: Admin@123
+6. Get your database credentials from your platform's connection settings and fill in the backend `.env` accordingly
 
-Super Admin: Access manually via http://localhost:3000/superadmin
+---
 
-Admin Features:
-  TV Mode: Access the TV Mode container directly from the dashboard. This tool allows you to generate a specific TV Mode URL, which you can copy and paste into a new tab or a dedicated display screen to show live rankings and data.
-  
-  Course Management: Create, Edit, Hide, or Delete courses and upload videos.
-  
-  Course Requests: Approve or reject user enrollment requests.
-  
-  Activities Management: Filter and monitor all user activities. Edits require a reason for audit trails.
-  
-  Leaderboard: View rankings by daily, weekly, or monthly filters.
-  
-  User History: Detailed drill-down into specific user actions and points.
-  
-  Brand Settings: Customize the platform name and logo.
+## 2. Backend Setup
 
-6. User Panel Access
-Sample Accounts:
+```bash
+cd backend
+npm install
+```
 
-  sam@gmail.com (Pass: sam)
-  
-  alex@gmail.com (Pass: alex)
+Create a `.env` file inside the `/backend` folder with the following variables:
 
-Workflow:
+| Variable | Description |
+|---|---|
+| `FRONTEND_URL` | The URL of the deployed frontend app, used for CORS and redirects |
+| `SUPER_ADMIN_PASSWORD` | Password required to access the /superadmin panel |
+| `DB_HOST` | PostgreSQL database host address |
+| `DB_PORT` | PostgreSQL database port |
+| `DB_USER` | PostgreSQL database username |
+| `DB_PASSWORD` | PostgreSQL database password |
+| `DB_NAME` | Name of the PostgreSQL database |
+| `PORT` | Port the backend server listens on |
+| `JWT_SECRET` | Secret key used to sign and verify authentication tokens |
+| `NODE_ENV` | Environment mode — set to `development` locally, `production` on live deployment |
+| `AWS_REGION` | AWS region where the S3 bucket is hosted |
+| `AWS_S3_BUCKET` | Name of the S3 bucket used for course video storage |
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key ID for S3 operations |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret access key for S3 operations |
 
-  Dashboard: View enrolled courses and track overall learning progress.
-  
-  Course Enrollment: Request access to available courses from the catalog.
-  
-  Learning: Watch videos; progress updates automatically and recommends the next module/course.
-  
-  Activity Logging: Earn points by completing modules and logging your daily tasks.
-  
-  Leaderboard Page: Users have access to a dedicated Leaderboard page where they can view their current standing, see points of other users, and filter rankings by daily, weekly, monthly, or all-time statistics to track competition.
+Start the backend:
 
-If you encounter any issues or have any questions, feel free to reach out for support.
+```bash
+node app.js
+```
+
+Runs on `http://localhost:5000`
+
+---
+
+## 3. Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+Create a `.env` file inside the `/frontend` folder with the following variable:
+
+| Variable | Description |
+|---|---|
+| `REACT_APP_API_URL` | Base URL pointing to the backend API |
+
+Start the frontend:
+
+```bash
+npm start
+```
+
+Runs on `http://localhost:3000` or your preferred service generated domain.
+
+---
+
+## 4. Super Admin
+
+Accessible at `/superadmin` — not linked from anywhere in the app by design.
+Protected by the `SUPER_ADMIN_PASSWORD` environment variable.
+Use this to create companies and admin accounts.
+
+---
+
+## Support
+
+For any questions regarding setup reach out to the original developer.
