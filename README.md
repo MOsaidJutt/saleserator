@@ -122,4 +122,4 @@ Use this to create companies and admin accounts.
 
 ## Support
 
-For any questions regarding setup reach out to the original developer.
+For any questions regarding setup if it confuses you at any step reach out.
